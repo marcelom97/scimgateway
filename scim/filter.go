@@ -558,6 +558,16 @@ func compareEqual(a, b any) bool {
 		return aStr == bStr
 	}
 
+	// Handle comparison between bool and custom bool types (like Boolean)
+	// Convert both to bool if either has underlying bool kind
+	aVal = reflect.ValueOf(a)
+	bVal = reflect.ValueOf(b)
+	if (aVal.Kind() == reflect.Bool || bVal.Kind() == reflect.Bool) &&
+		aVal.Type().ConvertibleTo(reflect.TypeOf(true)) &&
+		bVal.Type().ConvertibleTo(reflect.TypeOf(true)) {
+		return aVal.Convert(reflect.TypeOf(true)).Bool() == bVal.Convert(reflect.TypeOf(true)).Bool()
+	}
+
 	return reflect.DeepEqual(a, b)
 }
 

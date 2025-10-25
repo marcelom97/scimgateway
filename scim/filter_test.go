@@ -74,6 +74,11 @@ func TestFilterMatching(t *testing.T) {
 		{"not true", `not (active eq false)`, true, false},
 		{"complex true", `userName sw "john" and (active eq true or emails pr)`, true, false},
 		{"nested email", `emails[primary eq true].value co "example"`, true, false},
+		// Test Boolean custom type comparison with bool
+		{"Boolean type - primary eq true match", `emails[primary eq true].value pr`, true, false},
+		{"Boolean type - primary eq false match", `emails[primary eq false].value pr`, true, false},
+		{"Boolean type - primary ne false match", `emails[primary ne false].value pr`, true, false},
+		{"Boolean type - type eq work and primary eq true", `emails[type eq "work" and primary eq true].value pr`, true, false},
 	}
 
 	for _, tt := range tests {
@@ -126,6 +131,51 @@ func TestFilterWithComplexPaths(t *testing.T) {
 			got := filter.Matches(user)
 			if got != tt.want {
 				t.Errorf("Matches() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCompareEqual_BooleanType(t *testing.T) {
+	tests := []struct {
+		name string
+		a    any
+		b    any
+		want bool
+	}{
+		// Test Boolean type with bool
+		{"Boolean(true) == bool(true)", Boolean(true), true, true},
+		{"Boolean(false) == bool(false)", Boolean(false), false, true},
+		{"Boolean(true) != bool(false)", Boolean(true), false, false},
+		{"Boolean(false) != bool(true)", Boolean(false), true, false},
+
+		// Test reverse order (bool with Boolean)
+		{"bool(true) == Boolean(true)", true, Boolean(true), true},
+		{"bool(false) == Boolean(false)", false, Boolean(false), true},
+		{"bool(true) != Boolean(false)", true, Boolean(false), false},
+		{"bool(false) != Boolean(true)", false, Boolean(true), false},
+
+		// Test Boolean with Boolean
+		{"Boolean(true) == Boolean(true)", Boolean(true), Boolean(true), true},
+		{"Boolean(false) == Boolean(false)", Boolean(false), Boolean(false), true},
+		{"Boolean(true) != Boolean(false)", Boolean(true), Boolean(false), false},
+
+		// Test regular bool with bool (should still work)
+		{"bool(true) == bool(true)", true, true, true},
+		{"bool(false) == bool(false)", false, false, true},
+		{"bool(true) != bool(false)", true, false, false},
+
+		// Test with other types (should not match)
+		{"Boolean(true) != string", Boolean(true), "true", false},
+		{"Boolean(true) != int", Boolean(true), 1, false},
+		{"bool(true) != string", true, "true", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := compareEqual(tt.a, tt.b)
+			if got != tt.want {
+				t.Errorf("compareEqual(%v, %v) = %v, want %v", tt.a, tt.b, got, tt.want)
 			}
 		})
 	}

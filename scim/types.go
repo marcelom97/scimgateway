@@ -1,6 +1,10 @@
 package scim
 
-import "time"
+import (
+	"encoding/json"
+	"strings"
+	"time"
+)
 
 // Resource represents a SCIM resource with common attributes
 type Resource struct {
@@ -62,10 +66,39 @@ type Name struct {
 
 // MultiValuedAttribute represents a generic multi-valued SCIM attribute
 type MultiValuedAttribute[T any] struct {
-	Value   T      `json:"value"`
-	Type    string `json:"type,omitempty"`
-	Primary bool   `json:"primary,omitempty"`
-	Display string `json:"display,omitempty"`
+	Value   T       `json:"value"`
+	Type    string  `json:"type,omitempty"`
+	Primary Boolean `json:"primary,omitempty"`
+	Display string  `json:"display,omitempty"`
+}
+
+type Boolean bool
+
+func (b *Boolean) UnmarshalJSON(data []byte) error {
+	var val any
+	if err := json.Unmarshal(data, &val); err != nil {
+		return err
+	}
+	switch v := val.(type) {
+	case bool:
+		*b = Boolean(v)
+		return nil
+	case string:
+		if strings.ToLower(v) == "true" {
+			*b = Boolean(true)
+		} else if strings.ToLower(v) == "false" {
+			*b = Boolean(false)
+		} else {
+			return nil
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func (b Boolean) MarshalJSON() ([]byte, error) {
+	return json.Marshal(bool(b))
 }
 
 // Email represents an email address
