@@ -1,0 +1,742 @@
+### Variables
+@host = http://localhost:8080
+@plugin = sqlite
+@token = your_token_here
+
+### ============================================
+### Table of Contents
+### ============================================
+### 1. Discovery Endpoints
+### 2. User Operations (with Bearer Token)
+### 3. Group Operations
+### 4. Search Operations
+### 5. Bulk Operations
+### 6. SCIM Compliance Examples:
+###    - Bulk Circular Reference Detection (RFC 7644 Section 3.7.3)
+###    - Advanced Filtering Examples
+###    - Filter Case Sensitivity (RFC 7644 Section 3.4.2.2)
+###    - Attribute Selection Mutual Exclusivity (RFC 7644 Section 3.9)
+### 7. ETag Examples
+
+### ============================================
+### Discovery Endpoints (Per-plugin)
+### ============================================
+
+### Get Service Provider Configuration
+GET {{host}}/{{plugin}}/ServiceProviderConfig
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Get Resource Types
+GET {{host}}/{{plugin}}/ResourceTypes
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Get Schemas
+GET {{host}}/{{plugin}}/Schemas
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### ============================================
+### User Operations (with Bearer Token)
+### ============================================
+
+### List all users
+GET {{host}}/{{plugin}}/Users
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### List users with filter
+GET {{host}}/{{plugin}}/Users?filter=userName eq "john.doe"
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### List active users only
+GET {{host}}/{{plugin}}/Users?filter=active eq true
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### List users with pagination
+GET {{host}}/{{plugin}}/Users?startIndex=1&count=10
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### List users with sorting
+GET {{host}}/{{plugin}}/Users?sortBy=emails[type eq "work"].value&sortOrder=descending
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### List users with specific attributes
+GET {{host}}/{{plugin}}/Users
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Create a new user
+POST {{host}}/{{plugin}}/Users
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": [
+    "urn:ietf:params:scim:schemas:core:2.0:User"
+  ],
+  "userName": "john.doe",
+  "name": {
+    "givenName": "Marcelo",
+    "familyName": "Mollaj",
+    "formatted": "Marcelo Mollaj"
+  },
+  "displayName": "Marcelo Mollaj",
+  "emails": [
+    {
+      "value": "mm@doozer.de",
+      "type": "work",
+      "primary": true
+    },
+    {
+      "value": "marcelomollaj@gmail.com",
+      "type": "home"
+    }
+  ],
+  "phoneNumbers": [
+    {
+      "value": "+1-555-0100",
+      "type": "work"
+    }
+  ]
+}
+
+### Get a specific user (replace {userId} with actual ID)
+GET {{host}}/{{plugin}}/Users/2cf098c9-e6e5-4569-8494-566a8dd2d54d?attributes=userName
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Update user with PUT (full replacement)
+PUT {{host}}/{{plugin}}/Users/{userId}
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+  "userName": "john.doe",
+  "name": {
+    "givenName": "John",
+    "familyName": "Doe",
+    "formatted": "John Doe"
+  },
+  "displayName": "John Doe (Updated)",
+  "emails": [
+    {
+      "value": "john.doe@example.com",
+      "type": "work",
+      "primary": true
+    }
+  ],
+  "active": true
+}
+
+### Update user with PATCH
+PATCH {{host}}/{{plugin}}/Users/{userId}
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "replace",
+      "path": "userName",
+      "value": "marcelo.mollaj"
+    }
+  ]
+}
+
+### PATCH: Add email
+PATCH {{host}}/{{plugin}}/Users/{userId}
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "add",
+      "path": "emails",
+      "value": [
+        {
+          "value": "john.personal@example.com",
+          "type": "home"
+        }
+      ]
+    }
+  ]
+}
+
+### PATCH: Remove attribute
+PATCH {{host}}/{{plugin}}/Users/{userId}
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "remove",
+      "path": "phoneNumbers"
+    }
+  ]
+}
+
+### Delete a user
+DELETE {{host}}/{{plugin}}/Users/{userId}
+Authorization: Bearer {{token}}
+
+### ============================================
+### Group Operations
+### ============================================
+
+### List all groups
+GET {{host}}/{{plugin}}/Groups
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Create a new group
+POST {{host}}/{{plugin}}/Groups
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+  "displayName": "Engineering",
+  "members": []
+}
+
+### Get a specific group
+GET {{host}}/{{plugin}}/Groups/{groupId}
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Update group with PUT
+PUT {{host}}/{{plugin}}/Groups/{groupId}
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+  "displayName": "Engineering Team",
+  "members": [
+    {
+      "value": "b85d4584-f0a6-4a24-8262-ed980405da8e",
+      "type": "User"
+    }
+  ]
+}
+
+### PATCH: Update group name
+PATCH {{host}}/{{plugin}}/Groups/{groupId}
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "replace",
+      "path": "displayName",
+      "value": "Engineering Department"
+    }
+  ]
+}
+
+### PATCH: Add member to group
+PATCH {{host}}/{{plugin}}/Groups/{groupId}
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "add",
+      "path": "members",
+      "value": [
+        {
+          "value": "{userId}",
+          "type": "User"
+        }
+      ]
+    }
+  ]
+}
+
+### Delete a group
+DELETE {{host}}/{{plugin}}/Groups/{groupId}
+Authorization: Bearer {{token}}
+
+### ============================================
+### Search Operations
+### ============================================
+
+### Search across all resource types
+POST {{host}}/{{plugin}}/.search
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:SearchRequest"],
+  "filter": "active eq true",
+  "startIndex": 1,
+  "count": 10,
+  "sortBy": "userName",
+  "sortOrder": "ascending"
+}
+
+### Search with attributes
+POST {{host}}/{{plugin}}/.search
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:SearchRequest"],
+  "attributes": ["userName", "emails"],
+  "filter": "userName sw \"john\"",
+  "startIndex": 1,
+  "count": 10
+}
+
+### ============================================
+### Bulk Operations
+### ============================================
+
+### Bulk create users
+POST {{host}}/{{plugin}}/Bulk
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:BulkRequest"],
+  "Operations": [
+    {
+      "method": "POST",
+      "path": "/Users",
+      "bulkId": "user1",
+      "data": {
+        "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+        "userName": "alice.wonder",
+        "name": {
+          "givenName": "Alice",
+          "familyName": "Wonder"
+        },
+        "emails": [
+          {
+            "value": "alice@example.com",
+            "type": "work",
+            "primary": true
+          }
+        ],
+        "active": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/Users",
+      "bulkId": "user2",
+      "data": {
+        "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+        "userName": "bob.builder",
+        "name": {
+          "givenName": "Bob",
+          "familyName": "Builder"
+        },
+        "emails": [
+          {
+            "value": "bob@example.com",
+            "type": "work",
+            "primary": true
+          }
+        ],
+        "active": true
+      }
+    }
+  ]
+}
+
+### Bulk update and delete
+POST {{host}}/{{plugin}}/Bulk
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:BulkRequest"],
+  "Operations": [
+    {
+      "method": "PATCH",
+      "path": "/Users/{userId}",
+      "data": {
+        "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+        "Operations": [
+          {
+            "op": "replace",
+            "path": "active",
+            "value": false
+          }
+        ]
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/Users/{userId2}"
+    }
+  ]
+}
+
+### ============================================
+### SCIM Compliance: Bulk Circular Reference Detection (RFC 7644 Section 3.7.3)
+### ============================================
+### Note: Circular bulkId references are detected and rejected
+
+### Valid: Bulk operation with bulkId references (no circular dependency)
+POST {{host}}/{{plugin}}/Bulk
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:BulkRequest"],
+  "Operations": [
+    {
+      "method": "POST",
+      "path": "/Users",
+      "bulkId": "user1",
+      "data": {
+        "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+        "userName": "alice",
+        "name": {
+          "givenName": "Alice",
+          "familyName": "Wonder"
+        },
+        "active": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/Groups",
+      "bulkId": "group1",
+      "data": {
+        "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+        "displayName": "Admins",
+        "members": [
+          {
+            "value": "bulkId:user1",
+            "type": "User"
+          }
+        ]
+      }
+    }
+  ]
+}
+
+### Valid: Complex dependency chain without cycles (user3 → user2 → user1)
+POST {{host}}/{{plugin}}/Bulk
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:BulkRequest"],
+  "Operations": [
+    {
+      "method": "POST",
+      "path": "/Users",
+      "bulkId": "user1",
+      "data": {
+        "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+        "userName": "alice",
+        "name": {"givenName": "Alice"},
+        "active": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/Users",
+      "bulkId": "user2",
+      "data": {
+        "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+        "userName": "bob",
+        "name": {"givenName": "Bob"},
+        "manager": {"value": "bulkId:user1"},
+        "active": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/Users",
+      "bulkId": "user3",
+      "data": {
+        "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+        "userName": "charlie",
+        "name": {"givenName": "Charlie"},
+        "manager": {"value": "bulkId:user2"},
+        "active": true
+      }
+    }
+  ]
+}
+
+### Invalid: Direct circular reference (A→B, B→A) - will return 400 Bad Request
+# This will fail with error: "circular bulkId reference detected: user1 → user2 → user1"
+POST {{host}}/{{plugin}}/Bulk
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:BulkRequest"],
+  "Operations": [
+    {
+      "method": "POST",
+      "path": "/Users",
+      "bulkId": "user1",
+      "data": {
+        "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+        "userName": "alice",
+        "manager": {"value": "bulkId:user2"},
+        "active": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/Users",
+      "bulkId": "user2",
+      "data": {
+        "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+        "userName": "bob",
+        "manager": {"value": "bulkId:user1"},
+        "active": true
+      }
+    }
+  ]
+}
+
+### Invalid: Self-reference (A→A) - will return 400 Bad Request
+# This will fail with error: "circular bulkId reference detected: user1 → user1"
+POST {{host}}/{{plugin}}/Bulk
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:BulkRequest"],
+  "Operations": [
+    {
+      "method": "POST",
+      "path": "/Users",
+      "bulkId": "user1",
+      "data": {
+        "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+        "userName": "alice",
+        "manager": {"value": "bulkId:user1"},
+        "active": true
+      }
+    }
+  ]
+}
+
+### Invalid: Indirect circular reference (A→B→C→A) - will return 400 Bad Request
+# This will fail with error: "circular bulkId reference detected: user1 → user2 → user3 → user1"
+POST {{host}}/{{plugin}}/Bulk
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:BulkRequest"],
+  "Operations": [
+    {
+      "method": "POST",
+      "path": "/Users",
+      "bulkId": "user1",
+      "data": {
+        "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+        "userName": "alice",
+        "manager": {"value": "bulkId:user2"},
+        "active": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/Users",
+      "bulkId": "user2",
+      "data": {
+        "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+        "userName": "bob",
+        "manager": {"value": "bulkId:user3"},
+        "active": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/Users",
+      "bulkId": "user3",
+      "data": {
+        "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+        "userName": "charlie",
+        "manager": {"value": "bulkId:user1"},
+        "active": true
+      }
+    }
+  ]
+}
+
+### Invalid: Duplicate bulkId - will return 400 Bad Request
+# This will fail with error: "duplicate bulkId: user1"
+POST {{host}}/{{plugin}}/Bulk
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:BulkRequest"],
+  "Operations": [
+    {
+      "method": "POST",
+      "path": "/Users",
+      "bulkId": "user1",
+      "data": {
+        "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+        "userName": "alice",
+        "active": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/Users",
+      "bulkId": "user1",
+      "data": {
+        "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+        "userName": "bob",
+        "active": true
+      }
+    }
+  ]
+}
+
+### ============================================
+### Advanced Filtering Examples
+### ============================================
+
+### Filter by email domain
+GET {{host}}/{{plugin}}/Users?filter=emails.value co "@example.com"
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Filter by name
+GET {{host}}/{{plugin}}/Users?filter=name.givenName eq "John"
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Complex filter with AND
+GET {{host}}/{{plugin}}/Users?filter=active eq true and userName sw "john"
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Complex filter with OR
+GET {{host}}/{{plugin}}/Users?filter=userName eq "john.doe" or userName eq "jane.smith"
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Filter with NOT
+GET {{host}}/{{plugin}}/Users?filter=not(active eq true)
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### ============================================
+### SCIM Compliance: Filter Case Sensitivity (RFC 7644 Section 3.4.2.2)
+### ============================================
+### Note: Filter values are case-sensitive. "john" and "John" are different.
+
+### Case-sensitive exact match - will match userName "john.doe"
+GET {{host}}/{{plugin}}/Users?filter=userName eq "john.doe"
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Case-sensitive exact match - will NOT match userName "john.doe" (different case)
+GET {{host}}/{{plugin}}/Users?filter=userName eq "JOHN.DOE"
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Case-sensitive contains - will match "John" but not "john"
+GET {{host}}/{{plugin}}/Users?filter=name.givenName co "John"
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Case-sensitive starts with - will match "Alice" but not "alice"
+GET {{host}}/{{plugin}}/Users?filter=name.givenName sw "Alice"
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Case-sensitive ends with - will match "example.com" but not "Example.com"
+GET {{host}}/{{plugin}}/Users?filter=emails.value ew "example.com"
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### ============================================
+### SCIM Compliance: Attribute Selection Mutual Exclusivity (RFC 7644 Section 3.9)
+### ============================================
+### Note: Cannot use both 'attributes' and 'excludedAttributes' simultaneously
+
+### Valid: Using only 'attributes' parameter
+GET {{host}}/{{plugin}}/Users?attributes=userName,emails,active
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Valid: Using only 'excludedAttributes' parameter
+GET {{host}}/{{plugin}}/Users?excludedAttributes=groups,meta
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Invalid: Using both parameters (will return 400 Bad Request)
+# This will fail with error: "attributes and excludedAttributes are mutually exclusive"
+GET {{host}}/{{plugin}}/Users?attributes=userName&excludedAttributes=groups
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Valid: Attributes with sorting and filtering
+GET {{host}}/{{plugin}}/Users?attributes=userName,emails&filter=active eq true&sortBy=userName
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Valid: ExcludedAttributes on Groups endpoint
+GET {{host}}/{{plugin}}/Groups?excludedAttributes=members
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Invalid: Both parameters on single resource GET (will return 400 Bad Request)
+GET {{host}}/{{plugin}}/Users/{userId}?attributes=userName&excludedAttributes=groups
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### ============================================
+### ETag Examples
+### ============================================
+
+### Get user with ETag
+GET {{host}}/{{plugin}}/Users/{userId}
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+
+### Update only if ETag matches (replace with actual ETag from previous response)
+PUT {{host}}/{{plugin}}/Users/{userId}
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+If-Match: W/"your-etag-here"
+
+{
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+  "userName": "john.doe",
+  "name": {
+    "givenName": "John",
+    "familyName": "Doe"
+  },
+  "active": true
+}
+
+### Return 304 if resource hasn't changed
+GET {{host}}/{{plugin}}/Users/{userId}
+Authorization: Bearer {{token}}
+Content-Type: application/scim+json
+If-None-Match: W/"your-etag-here"
