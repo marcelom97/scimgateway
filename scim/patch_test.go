@@ -166,6 +166,176 @@ func TestPatchProcessor_ComplexPath(t *testing.T) {
 	}
 }
 
+func TestPatchProcessor_ReplaceFilteredArraySubAttribute(t *testing.T) {
+	user := &User{
+		UserName: "john.doe",
+		Emails: []Email{
+			{Value: "john@work.com", Type: "work", Primary: true},
+			{Value: "john@home.com", Type: "home"},
+		},
+		PhoneNumbers: []PhoneNumber{
+			{Value: "555-1234", Type: "work", Primary: true},
+			{Value: "555-5678", Type: "mobile"},
+			{Value: "555-9999", Type: "fax"},
+		},
+		Addresses: []Address{
+			{Formatted: "123 Main St", Type: "work", Primary: true},
+			{Formatted: "456 Home St", Type: "home"},
+		},
+	}
+
+	tests := []struct {
+		name      string
+		patch     *PatchOp
+		checkFunc func(*User) bool
+		wantErr   bool
+	}{
+		{
+			name: "replace email value in filtered array",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "replace", Path: "emails[type eq \"work\"].value", Value: "newemail@work.com"},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				for _, email := range u.Emails {
+					if email.Type == "work" {
+						return email.Value == "newemail@work.com"
+					}
+				}
+				return false
+			},
+			wantErr: false,
+		},
+		{
+			name: "replace email primary flag in filtered array",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "replace", Path: "emails[type eq \"work\"].primary", Value: false},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				for _, email := range u.Emails {
+					if email.Type == "work" {
+						return email.Primary == false
+					}
+				}
+				return false
+			},
+			wantErr: false,
+		},
+		{
+			name: "replace phone number in filtered array",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "replace", Path: "phoneNumbers[type eq \"mobile\"].value", Value: "999-9999"},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				for _, phone := range u.PhoneNumbers {
+					if phone.Type == "mobile" {
+						return phone.Value == "999-9999"
+					}
+				}
+				return false
+			},
+			wantErr: false,
+		},
+		{
+			name: "replace address formatted in filtered array",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "replace", Path: "addresses[type eq \"work\"].formatted", Value: "789 New St"},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				for _, addr := range u.Addresses {
+					if addr.Type == "work" {
+						return addr.Formatted == "789 New St"
+					}
+				}
+				return false
+			},
+			wantErr: false,
+		},
+		{
+			name: "multiple replace operations with filtered paths",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "replace", Path: "emails[type eq \"work\"].value", Value: "updated@work.com"},
+					{Op: "replace", Path: "phoneNumbers[type eq \"work\"].value", Value: "111-2222"},
+					{Op: "replace", Path: "addresses[type eq \"home\"].formatted", Value: "999 Updated St"},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				emailOk := false
+				phoneOk := false
+				addrOk := false
+				for _, email := range u.Emails {
+					if email.Type == "work" && email.Value == "updated@work.com" {
+						emailOk = true
+					}
+				}
+				for _, phone := range u.PhoneNumbers {
+					if phone.Type == "work" && phone.Value == "111-2222" {
+						phoneOk = true
+					}
+				}
+				for _, addr := range u.Addresses {
+					if addr.Type == "home" && addr.Formatted == "999 Updated St" {
+						addrOk = true
+					}
+				}
+				return emailOk && phoneOk && addrOk
+			},
+			wantErr: false,
+		},
+		{
+			name: "replace non-existent filter match should fail",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "replace", Path: "emails[type eq \"business\"].value", Value: "test@business.com"},
+				},
+			},
+			checkFunc: func(u *User) bool { return true },
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a fresh copy for each test
+			testUser := &User{
+				UserName: user.UserName,
+				Emails:   make([]Email, len(user.Emails)),
+				PhoneNumbers: make([]PhoneNumber, len(user.PhoneNumbers)),
+				Addresses: make([]Address, len(user.Addresses)),
+			}
+			copy(testUser.Emails, user.Emails)
+			copy(testUser.PhoneNumbers, user.PhoneNumbers)
+			copy(testUser.Addresses, user.Addresses)
+
+			processor := NewPatchProcessor()
+			err := processor.ApplyPatch(testUser, tt.patch)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ApplyPatch() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && !tt.checkFunc(testUser) {
+				t.Errorf("Patch did not apply correctly")
+			}
+		})
+	}
+}
+
 func TestParsePath(t *testing.T) {
 	tests := []struct {
 		name         string

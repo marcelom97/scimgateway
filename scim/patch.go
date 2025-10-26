@@ -149,7 +149,27 @@ func (pp *PatchProcessor) addToPath(resource any, path *Path, value any) error {
 			return ErrNoTarget(fmt.Sprintf("attribute %s not found", segment.Attribute))
 		}
 
-		if field.Kind() == reflect.Ptr {
+		// Handle intermediate segments with filters (e.g., emails[type eq "work"].value)
+		if segment.Filter != nil && (field.Kind() == reflect.Slice || field.Kind() == reflect.Array) {
+			// Find the first matching element in the array
+			matchFound := false
+			for j := 0; j < field.Len(); j++ {
+				elem := field.Index(j)
+				if segment.Filter.Matches(elem.Interface()) {
+					// Navigate into the matching element
+					if elem.Kind() == reflect.Ptr {
+						target = elem.Elem()
+					} else {
+						target = elem
+					}
+					matchFound = true
+					break
+				}
+			}
+			if !matchFound {
+				return ErrNoTarget(fmt.Sprintf("no matching element found for filter in attribute %s", segment.Attribute))
+			}
+		} else if field.Kind() == reflect.Ptr {
 			if field.IsNil() {
 				// Create new instance
 				field.Set(reflect.New(field.Type().Elem()))
@@ -195,7 +215,27 @@ func (pp *PatchProcessor) removeFromPath(resource any, path *Path) error {
 			return nil
 		}
 
-		if field.Kind() == reflect.Ptr {
+		// Handle intermediate segments with filters (e.g., emails[type eq "work"].value)
+		if segment.Filter != nil && (field.Kind() == reflect.Slice || field.Kind() == reflect.Array) {
+			// Find the first matching element in the array
+			matchFound := false
+			for j := 0; j < field.Len(); j++ {
+				elem := field.Index(j)
+				if segment.Filter.Matches(elem.Interface()) {
+					// Navigate into the matching element
+					if elem.Kind() == reflect.Ptr {
+						target = elem.Elem()
+					} else {
+						target = elem
+					}
+					matchFound = true
+					break
+				}
+			}
+			if !matchFound {
+				return nil // No matching element, nothing to remove
+			}
+		} else if field.Kind() == reflect.Ptr {
 			if field.IsNil() {
 				return nil
 			}
