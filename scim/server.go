@@ -72,6 +72,17 @@ func NewServerWithLogger(baseURL string, pluginManager PluginManager, logger *sl
 	return s
 }
 
+// handlePluginError writes the appropriate error response based on error type
+// If the error is a *SCIMError, it uses the status and scimType from the error
+// Otherwise, it uses the provided fallback status and scimType
+func (s *Server) handlePluginError(w http.ResponseWriter, err error, fallbackStatus int, fallbackScimType string) {
+	if scimErr, ok := err.(*SCIMError); ok {
+		s.handler.WriteSCIMError(w, scimErr)
+	} else {
+		s.handler.WriteError(w, fallbackStatus, err.Error(), fallbackScimType)
+	}
+}
+
 // setupRoutes sets up HTTP routes using Go 1.22+ enhanced routing patterns
 func (s *Server) setupRoutes() {
 	// Per-plugin discovery endpoints (public, no auth required - handled by middleware)
@@ -151,7 +162,7 @@ func (s *Server) handleResourceTypes(w http.ResponseWriter, r *http.Request) {
 
 	// Return default resource types
 	resourceTypes := GetResourceTypes()
-	s.handler.WriteJSON(w, http.StatusOK, resourceTypes)
+	s.handler.WriteJSON(w, http.StatusOK, map[string]any{"Resources": resourceTypes})
 }
 
 // handleSchemas handles GET /{plugin}/Schemas
@@ -436,7 +447,7 @@ func (s *Server) createUser(w http.ResponseWriter, r *http.Request, plugin Plugi
 
 	created, err := plugin.CreateUser(r.Context(), pluginName, &user)
 	if err != nil {
-		s.handler.WriteError(w, http.StatusInternalServerError, err.Error(), "internalError")
+		s.handlePluginError(w, err, http.StatusInternalServerError, "internalError")
 		return
 	}
 
@@ -473,7 +484,7 @@ func (s *Server) getUser(w http.ResponseWriter, r *http.Request, plugin PluginGe
 
 	user, err := plugin.GetUser(r.Context(), pluginName, id, params.Attributes)
 	if err != nil {
-		s.handler.WriteError(w, http.StatusNotFound, err.Error(), "notFound")
+		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
@@ -520,7 +531,7 @@ func (s *Server) replaceUser(w http.ResponseWriter, r *http.Request, plugin Plug
 	// Get current resource to check ETag preconditions
 	currentUser, err := plugin.GetUser(r.Context(), pluginName, id, nil)
 	if err != nil {
-		s.handler.WriteError(w, http.StatusNotFound, err.Error(), "notFound")
+		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
@@ -556,13 +567,13 @@ func (s *Server) replaceUser(w http.ResponseWriter, r *http.Request, plugin Plug
 
 	// Delete and recreate (simple replace strategy)
 	if err := plugin.DeleteUser(r.Context(), pluginName, id); err != nil {
-		s.handler.WriteError(w, http.StatusNotFound, err.Error(), "notFound")
+		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
 	created, err := plugin.CreateUser(r.Context(), pluginName, &user)
 	if err != nil {
-		s.handler.WriteError(w, http.StatusInternalServerError, err.Error(), "internalError")
+		s.handlePluginError(w, err, http.StatusInternalServerError, "internalError")
 		return
 	}
 
@@ -587,7 +598,7 @@ func (s *Server) modifyUser(w http.ResponseWriter, r *http.Request, plugin Plugi
 	// Get current resource to check ETag preconditions
 	currentUser, err := plugin.GetUser(r.Context(), pluginName, id, nil)
 	if err != nil {
-		s.handler.WriteError(w, http.StatusNotFound, err.Error(), "notFound")
+		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
@@ -619,14 +630,14 @@ func (s *Server) modifyUser(w http.ResponseWriter, r *http.Request, plugin Plugi
 	}
 
 	if err := plugin.ModifyUser(r.Context(), pluginName, id, &patch); err != nil {
-		s.handler.WriteError(w, http.StatusNotFound, err.Error(), "notFound")
+		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
 	// Return updated user
 	user, err := plugin.GetUser(r.Context(), pluginName, id, nil)
 	if err != nil {
-		s.handler.WriteError(w, http.StatusInternalServerError, err.Error(), "internalError")
+		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
@@ -651,7 +662,7 @@ func (s *Server) deleteUser(w http.ResponseWriter, r *http.Request, plugin Plugi
 	// Get current resource to check ETag preconditions
 	currentUser, err := plugin.GetUser(r.Context(), pluginName, id, nil)
 	if err != nil {
-		s.handler.WriteError(w, http.StatusNotFound, err.Error(), "notFound")
+		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
@@ -670,7 +681,7 @@ func (s *Server) deleteUser(w http.ResponseWriter, r *http.Request, plugin Plugi
 	}
 
 	if err := plugin.DeleteUser(r.Context(), pluginName, id); err != nil {
-		s.handler.WriteError(w, http.StatusNotFound, err.Error(), "notFound")
+		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
@@ -742,7 +753,7 @@ func (s *Server) createGroup(w http.ResponseWriter, r *http.Request, plugin Plug
 
 	created, err := plugin.CreateGroup(r.Context(), pluginName, &group)
 	if err != nil {
-		s.handler.WriteError(w, http.StatusInternalServerError, err.Error(), "internalError")
+		s.handlePluginError(w, err, http.StatusInternalServerError, "internalError")
 		return
 	}
 
@@ -779,7 +790,7 @@ func (s *Server) getGroup(w http.ResponseWriter, r *http.Request, plugin PluginG
 
 	group, err := plugin.GetGroup(r.Context(), pluginName, id, params.Attributes)
 	if err != nil {
-		s.handler.WriteError(w, http.StatusNotFound, err.Error(), "notFound")
+		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
@@ -826,7 +837,7 @@ func (s *Server) replaceGroup(w http.ResponseWriter, r *http.Request, plugin Plu
 	// Get current resource to check ETag preconditions
 	currentGroup, err := plugin.GetGroup(r.Context(), pluginName, id, nil)
 	if err != nil {
-		s.handler.WriteError(w, http.StatusNotFound, err.Error(), "notFound")
+		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
@@ -862,13 +873,13 @@ func (s *Server) replaceGroup(w http.ResponseWriter, r *http.Request, plugin Plu
 
 	// Delete and recreate (simple replace strategy)
 	if err := plugin.DeleteGroup(r.Context(), pluginName, id); err != nil {
-		s.handler.WriteError(w, http.StatusNotFound, err.Error(), "notFound")
+		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
 	created, err := plugin.CreateGroup(r.Context(), pluginName, &group)
 	if err != nil {
-		s.handler.WriteError(w, http.StatusInternalServerError, err.Error(), "internalError")
+		s.handlePluginError(w, err, http.StatusInternalServerError, "internalError")
 		return
 	}
 
@@ -893,7 +904,7 @@ func (s *Server) modifyGroup(w http.ResponseWriter, r *http.Request, plugin Plug
 	// Get current resource to check ETag preconditions
 	currentGroup, err := plugin.GetGroup(r.Context(), pluginName, id, nil)
 	if err != nil {
-		s.handler.WriteError(w, http.StatusNotFound, err.Error(), "notFound")
+		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
@@ -925,14 +936,14 @@ func (s *Server) modifyGroup(w http.ResponseWriter, r *http.Request, plugin Plug
 	}
 
 	if err := plugin.ModifyGroup(r.Context(), pluginName, id, &patch); err != nil {
-		s.handler.WriteError(w, http.StatusNotFound, err.Error(), "notFound")
+		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
 	// Return updated group
 	group, err := plugin.GetGroup(r.Context(), pluginName, id, nil)
 	if err != nil {
-		s.handler.WriteError(w, http.StatusInternalServerError, err.Error(), "internalError")
+		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
@@ -957,7 +968,7 @@ func (s *Server) deleteGroup(w http.ResponseWriter, r *http.Request, plugin Plug
 	// Get current resource to check ETag preconditions
 	currentGroup, err := plugin.GetGroup(r.Context(), pluginName, id, nil)
 	if err != nil {
-		s.handler.WriteError(w, http.StatusNotFound, err.Error(), "notFound")
+		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
@@ -976,7 +987,7 @@ func (s *Server) deleteGroup(w http.ResponseWriter, r *http.Request, plugin Plug
 	}
 
 	if err := plugin.DeleteGroup(r.Context(), pluginName, id); err != nil {
-		s.handler.WriteError(w, http.StatusNotFound, err.Error(), "notFound")
+		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 

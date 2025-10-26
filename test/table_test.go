@@ -54,11 +54,16 @@ func TestHTTPEndpoints_TableDriven(t *testing.T) {
 			Path:           "/test/ResourceTypes",
 			ExpectedStatus: http.StatusOK,
 			Validate: func(t *testing.T, resp *http.Response, context map[string]string) {
-				var result []any
+				var result map[string]any
 				if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 					t.Errorf("Failed to decode response: %v", err)
 				}
-				if len(result) == 0 {
+				resources, ok := result["Resources"].([]any)
+				if !ok {
+					t.Error("Expected Resources array")
+					return
+				}
+				if len(resources) == 0 {
 					t.Error("Expected resource types array")
 				}
 			},

@@ -31,13 +31,6 @@ func (v *Validator) ValidateUser(user *User) error {
 		return ErrInvalidValue("userName contains invalid characters")
 	}
 
-	// Validate emails
-	for _, email := range user.Emails {
-		if err := v.validateEmail(email.Value); err != nil {
-			return err
-		}
-	}
-
 	// Validate schemas
 	if len(user.Schemas) == 0 {
 		user.Schemas = []string{SchemaUser}
@@ -107,21 +100,6 @@ func (v *Validator) validatePatchOperation(op PatchOperation) error {
 	// Add and Replace require a value (unless path targets specific attribute)
 	if (opLower == "add" || opLower == "replace") && op.Value == nil && op.Path == "" {
 		return ErrInvalidValue(fmt.Sprintf("value is required for %s operation", op.Op))
-	}
-
-	return nil
-}
-
-// validateEmail validates an email address
-func (v *Validator) validateEmail(email string) error {
-	if email == "" {
-		return nil // Email is optional
-	}
-
-	// Basic email validation
-	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
-	if !emailRegex.MatchString(email) {
-		return ErrInvalidValue(fmt.Sprintf("invalid email format: %s", email))
 	}
 
 	return nil

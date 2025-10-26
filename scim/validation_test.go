@@ -37,7 +37,7 @@ func TestValidator_ValidateUser(t *testing.T) {
 					{Value: "invalid-email"},
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "invalid userName chars",

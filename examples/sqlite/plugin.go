@@ -216,6 +216,19 @@ func (p *SQLitePlugin) CreateUser(ctx context.Context, baseEntity string, user *
 		user.Schemas = []string{scim.SchemaUser}
 	}
 
+	var exists bool
+	// Check for existing username
+	err := p.db.GetContext(ctx, &exists, "SELECT EXISTS(SELECT 1 FROM users WHERE username = ?)", user.UserName)
+	if err != nil {
+		return nil, scim.ErrInternalServer(fmt.Sprintf("failed to check existing username: %v", err))
+	}
+
+	if exists {
+		return nil, scim.ErrUniqueness(
+			fmt.Sprintf("userName '%s' already exists", user.UserName),
+		)
+	}
+
 	// Set meta
 	now := time.Now()
 	user.Meta = &scim.Meta{
@@ -237,7 +250,7 @@ func (p *SQLitePlugin) CreateUser(ctx context.Context, baseEntity string, user *
 	}
 
 	if _, err := p.db.NamedExecContext(ctx, query, row); err != nil {
-		return nil, fmt.Errorf("failed to insert user: %w", err)
+		return nil, scim.ErrInternalServer(fmt.Sprintf("failed to insert user: %v", err))
 	}
 
 	return user, nil
@@ -250,9 +263,9 @@ func (p *SQLitePlugin) GetUser(ctx context.Context, baseEntity string, id string
 
 	if err := p.db.GetContext(ctx, &row, query, id); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("user not found")
+			return nil, scim.ErrNotFound("User", id)
 		}
-		return nil, fmt.Errorf("failed to get user: %w", err)
+		return nil, scim.ErrInternalServer(fmt.Sprintf("failed to get user: %v", err))
 	}
 
 	return row.Data.User, nil
@@ -260,7 +273,7 @@ func (p *SQLitePlugin) GetUser(ctx context.Context, baseEntity string, id string
 
 // ModifyUser updates a user's attributes
 func (p *SQLitePlugin) ModifyUser(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error {
-	// Get existing user
+	// Get existing user (returns ErrNotFound if not exists)
 	user, err := p.GetUser(ctx, baseEntity, id, nil)
 	if err != nil {
 		return err
@@ -269,7 +282,7 @@ func (p *SQLitePlugin) ModifyUser(ctx context.Context, baseEntity string, id str
 	// Apply patch operations
 	patcher := scim.NewPatchProcessor()
 	if err := patcher.ApplyPatch(user, patch); err != nil {
-		return err
+		return scim.ErrInvalidSyntax(fmt.Sprintf("failed to apply patch: %v", err))
 	}
 
 	// Update metadata
@@ -288,7 +301,7 @@ func (p *SQLitePlugin) ModifyUser(ctx context.Context, baseEntity string, id str
 	}
 
 	if _, err := p.db.NamedExecContext(ctx, query, row); err != nil {
-		return fmt.Errorf("failed to update user: %w", err)
+		return scim.ErrInternalServer(fmt.Sprintf("failed to update user: %v", err))
 	}
 
 	return nil
@@ -298,16 +311,16 @@ func (p *SQLitePlugin) ModifyUser(ctx context.Context, baseEntity string, id str
 func (p *SQLitePlugin) DeleteUser(ctx context.Context, baseEntity string, id string) error {
 	result, err := p.db.ExecContext(ctx, "DELETE FROM users WHERE id = ?", id)
 	if err != nil {
-		return fmt.Errorf("failed to delete user: %w", err)
+		return scim.ErrInternalServer(fmt.Sprintf("failed to delete user: %v", err))
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
+		return scim.ErrInternalServer(fmt.Sprintf("failed to get rows affected: %v", err))
 	}
 
 	if rows == 0 {
-		return fmt.Errorf("user not found")
+		return scim.ErrNotFound("User", id)
 	}
 
 	return nil
@@ -344,6 +357,19 @@ func (p *SQLitePlugin) CreateGroup(ctx context.Context, baseEntity string, group
 		group.Schemas = []string{scim.SchemaGroup}
 	}
 
+	var exists bool
+	// Check for existing displayName
+	err := p.db.GetContext(ctx, &exists, "SELECT EXISTS(SELECT 1 FROM groups WHERE display_name = ?)", group.DisplayName)
+	if err != nil {
+		return nil, scim.ErrInternalServer(fmt.Sprintf("failed to check existing displayName: %v", err))
+	}
+
+	if exists {
+		return nil, scim.ErrUniqueness(
+			fmt.Sprintf("displayName '%s' already exists", group.DisplayName),
+		)
+	}
+
 	// Set meta
 	now := time.Now()
 	group.Meta = &scim.Meta{
@@ -365,7 +391,7 @@ func (p *SQLitePlugin) CreateGroup(ctx context.Context, baseEntity string, group
 	}
 
 	if _, err := p.db.NamedExecContext(ctx, query, row); err != nil {
-		return nil, fmt.Errorf("failed to insert group: %w", err)
+		return nil, scim.ErrInternalServer(fmt.Sprintf("failed to insert group: %v", err))
 	}
 
 	return group, nil
@@ -378,9 +404,9 @@ func (p *SQLitePlugin) GetGroup(ctx context.Context, baseEntity string, id strin
 
 	if err := p.db.GetContext(ctx, &row, query, id); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("group not found")
+			return nil, scim.ErrNotFound("Group", id)
 		}
-		return nil, fmt.Errorf("failed to get group: %w", err)
+		return nil, scim.ErrInternalServer(fmt.Sprintf("failed to get group: %v", err))
 	}
 
 	return row.Data.Group, nil
@@ -388,7 +414,7 @@ func (p *SQLitePlugin) GetGroup(ctx context.Context, baseEntity string, id strin
 
 // ModifyGroup updates a group's attributes
 func (p *SQLitePlugin) ModifyGroup(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error {
-	// Get existing group
+	// Get existing group (returns ErrNotFound if not exists)
 	group, err := p.GetGroup(ctx, baseEntity, id, nil)
 	if err != nil {
 		return err
@@ -397,7 +423,7 @@ func (p *SQLitePlugin) ModifyGroup(ctx context.Context, baseEntity string, id st
 	// Apply patch operations
 	patcher := scim.NewPatchProcessor()
 	if err := patcher.ApplyPatch(group, patch); err != nil {
-		return err
+		return scim.ErrInvalidSyntax(fmt.Sprintf("failed to apply patch: %v", err))
 	}
 
 	// Update metadata
@@ -416,7 +442,7 @@ func (p *SQLitePlugin) ModifyGroup(ctx context.Context, baseEntity string, id st
 	}
 
 	if _, err := p.db.NamedExecContext(ctx, query, row); err != nil {
-		return fmt.Errorf("failed to update group: %w", err)
+		return scim.ErrInternalServer(fmt.Sprintf("failed to update group: %v", err))
 	}
 
 	return nil
@@ -426,16 +452,16 @@ func (p *SQLitePlugin) ModifyGroup(ctx context.Context, baseEntity string, id st
 func (p *SQLitePlugin) DeleteGroup(ctx context.Context, baseEntity string, id string) error {
 	result, err := p.db.ExecContext(ctx, "DELETE FROM groups WHERE id = ?", id)
 	if err != nil {
-		return fmt.Errorf("failed to delete group: %w", err)
+		return scim.ErrInternalServer(fmt.Sprintf("failed to delete group: %v", err))
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
+		return scim.ErrInternalServer(fmt.Sprintf("failed to get rows affected: %v", err))
 	}
 
 	if rows == 0 {
-		return fmt.Errorf("group not found")
+		return scim.ErrNotFound("Group", id)
 	}
 
 	return nil
