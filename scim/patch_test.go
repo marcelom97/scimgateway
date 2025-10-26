@@ -312,10 +312,10 @@ func TestPatchProcessor_ReplaceFilteredArraySubAttribute(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a fresh copy for each test
 			testUser := &User{
-				UserName: user.UserName,
-				Emails:   make([]Email, len(user.Emails)),
+				UserName:     user.UserName,
+				Emails:       make([]Email, len(user.Emails)),
 				PhoneNumbers: make([]PhoneNumber, len(user.PhoneNumbers)),
-				Addresses: make([]Address, len(user.Addresses)),
+				Addresses:    make([]Address, len(user.Addresses)),
 			}
 			copy(testUser.Emails, user.Emails)
 			copy(testUser.PhoneNumbers, user.PhoneNumbers)
@@ -359,6 +359,166 @@ func TestParsePath(t *testing.T) {
 
 			if path.Segments[0].Attribute != tt.wantAttr {
 				t.Errorf("first attribute = %v, want %v", path.Segments[0].Attribute, tt.wantAttr)
+			}
+		})
+	}
+}
+
+func TestPatchProcessor_EnterpriseExtension(t *testing.T) {
+	user := &User{
+		UserName: "john.doe",
+		Active:   Bool(true),
+		EnterpriseUser: map[string]any{
+			"employeeNumber": "EMP001",
+		},
+	}
+
+	tests := []struct {
+		name      string
+		patch     *PatchOp
+		checkFunc func(*User) bool
+		wantErr   bool
+	}{
+		{
+			name: "replace enterprise extension attribute",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "replace", Path: "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:employeeNumber", Value: "EMP12345"},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				val, ok := u.EnterpriseUser["employeeNumber"]
+				return ok && val == "EMP12345"
+			},
+			wantErr: false,
+		},
+		{
+			name: "add new enterprise extension attribute",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "replace", Path: "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:department", Value: "Engineering"},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				val, ok := u.EnterpriseUser["department"]
+				return ok && val == "Engineering"
+			},
+			wantErr: false,
+		},
+		{
+			name: "replace multiple enterprise extension attributes",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "replace", Path: "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:department", Value: "Sales"},
+					{Op: "replace", Path: "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:costCenter", Value: "CC9999"},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				dept, deptOk := u.EnterpriseUser["department"]
+				cost, costOk := u.EnterpriseUser["costCenter"]
+				return deptOk && dept == "Sales" && costOk && cost == "CC9999"
+			},
+			wantErr: false,
+		},
+		{
+			name: "remove enterprise extension attribute",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "remove", Path: "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:employeeNumber"},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				_, exists := u.EnterpriseUser["employeeNumber"]
+				return !exists
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a fresh copy for each test
+			testUser := &User{
+				UserName:       user.UserName,
+				Active:         user.Active,
+				EnterpriseUser: make(map[string]any),
+			}
+			// Copy map contents
+			for k, v := range user.EnterpriseUser {
+				testUser.EnterpriseUser[k] = v
+			}
+
+			processor := NewPatchProcessor()
+			err := processor.ApplyPatch(testUser, tt.patch)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ApplyPatch() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && !tt.checkFunc(testUser) {
+				t.Errorf("Patch did not apply correctly")
+			}
+		})
+	}
+}
+
+func TestParsePath_URNPaths(t *testing.T) {
+	tests := []struct {
+		name         string
+		pathStr      string
+		wantSegments int
+		wantFirst    string
+		wantSecond   string
+	}{
+		{
+			name:         "enterprise extension simple attribute",
+			pathStr:      "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:employeeNumber",
+			wantSegments: 2,
+			wantFirst:    "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
+			wantSecond:   "employeeNumber",
+		},
+		{
+			name:         "enterprise extension nested attribute",
+			pathStr:      "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:manager.value",
+			wantSegments: 3,
+			wantFirst:    "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
+			wantSecond:   "manager",
+		},
+		{
+			name:         "normal attribute path",
+			pathStr:      "name.givenName",
+			wantSegments: 2,
+			wantFirst:    "name",
+			wantSecond:   "givenName",
+		},
+		{
+			name:         "filtered array path",
+			pathStr:      "emails[type eq \"work\"].value",
+			wantSegments: 2,
+			wantFirst:    "emails",
+			wantSecond:   "value",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := parsePath(tt.pathStr)
+
+			if len(path.Segments) != tt.wantSegments {
+				t.Errorf("segments = %d, want %d", len(path.Segments), tt.wantSegments)
+			}
+
+			if path.Segments[0].Attribute != tt.wantFirst {
+				t.Errorf("first attribute = %v, want %v", path.Segments[0].Attribute, tt.wantFirst)
+			}
+
+			if len(path.Segments) >= 2 && path.Segments[1].Attribute != tt.wantSecond {
+				t.Errorf("second attribute = %v, want %v", path.Segments[1].Attribute, tt.wantSecond)
 			}
 		})
 	}

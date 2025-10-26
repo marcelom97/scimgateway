@@ -123,9 +123,32 @@ func (pp *PatchProcessor) addToPath(resource any, path *Path, value any) error {
 
 	// Navigate to the target
 	target := v
+	var parentField reflect.Value // Track the field for map operations
+
 	for i, segment := range path.Segments {
 		if i == len(path.Segments)-1 {
 			// Last segment - perform the add
+
+			// Check if parent is a map (for extension attributes)
+			if parentField.IsValid() && parentField.Kind() == reflect.Map {
+				// Initialize map if nil
+				if parentField.IsNil() {
+					parentField.Set(reflect.MakeMap(parentField.Type()))
+				}
+				// Set value in map
+				valueData, err := json.Marshal(value)
+				if err != nil {
+					return err
+				}
+				var val any
+				if err := json.Unmarshal(valueData, &val); err != nil {
+					return err
+				}
+				parentField.SetMapIndex(reflect.ValueOf(segment.Attribute), reflect.ValueOf(val))
+				return nil
+			}
+
+			// Normal struct field access
 			field := findField(target, segment.Attribute)
 			if !field.IsValid() {
 				return ErrNoTarget(fmt.Sprintf("attribute %s not found", segment.Attribute))
@@ -169,14 +192,21 @@ func (pp *PatchProcessor) addToPath(resource any, path *Path, value any) error {
 			if !matchFound {
 				return ErrNoTarget(fmt.Sprintf("no matching element found for filter in attribute %s", segment.Attribute))
 			}
+			parentField = reflect.Value{} // Clear parent field
+		} else if field.Kind() == reflect.Map {
+			// Next segment will access this map
+			parentField = field
+			// Don't update target for maps - we'll use parentField
 		} else if field.Kind() == reflect.Ptr {
 			if field.IsNil() {
 				// Create new instance
 				field.Set(reflect.New(field.Type().Elem()))
 			}
 			target = field.Elem()
+			parentField = reflect.Value{} // Clear parent field
 		} else {
 			target = field
+			parentField = reflect.Value{} // Clear parent field
 		}
 	}
 
@@ -191,14 +221,25 @@ func (pp *PatchProcessor) removeFromPath(resource any, path *Path) error {
 	}
 
 	target := v
-	for i, segment := range path.Segments {
-		field := findField(target, segment.Attribute)
-		if !field.IsValid() {
-			return nil // Attribute doesn't exist, nothing to remove
-		}
+	var parentField reflect.Value // Track the field for map operations
 
+	for i, segment := range path.Segments {
 		if i == len(path.Segments)-1 {
 			// Last segment - perform the remove
+
+			// Check if parent is a map (for extension attributes)
+			if parentField.IsValid() && parentField.Kind() == reflect.Map {
+				// Delete key from map
+				parentField.SetMapIndex(reflect.ValueOf(segment.Attribute), reflect.Value{})
+				return nil
+			}
+
+			// Normal struct field access
+			field := findField(target, segment.Attribute)
+			if !field.IsValid() {
+				return nil // Attribute doesn't exist, nothing to remove
+			}
+
 			if segment.Filter != nil {
 				// Remove from filtered array
 				if field.Kind() == reflect.Slice || field.Kind() == reflect.Array {
@@ -213,6 +254,12 @@ func (pp *PatchProcessor) removeFromPath(resource any, path *Path) error {
 			// Set to zero value
 			field.Set(reflect.Zero(field.Type()))
 			return nil
+		}
+
+		// Navigate deeper
+		field := findField(target, segment.Attribute)
+		if !field.IsValid() {
+			return nil // Attribute doesn't exist, nothing to remove
 		}
 
 		// Handle intermediate segments with filters (e.g., emails[type eq "work"].value)
@@ -235,13 +282,20 @@ func (pp *PatchProcessor) removeFromPath(resource any, path *Path) error {
 			if !matchFound {
 				return nil // No matching element, nothing to remove
 			}
+			parentField = reflect.Value{} // Clear parent field
+		} else if field.Kind() == reflect.Map {
+			// Next segment will access this map
+			parentField = field
+			// Don't update target for maps - we'll use parentField
 		} else if field.Kind() == reflect.Ptr {
 			if field.IsNil() {
 				return nil
 			}
 			target = field.Elem()
+			parentField = reflect.Value{} // Clear parent field
 		} else {
 			target = field
+			parentField = reflect.Value{} // Clear parent field
 		}
 	}
 
@@ -335,13 +389,50 @@ func parsePath(pathStr string) *Path {
 		Segments: []PathSegment{},
 	}
 
-	// Simple parsing for paths like:
-	// - emails[type eq "work"].value
-	// - name.givenName
-	// - addresses[type eq "work"]
+	// Parse different path types:
+	// - Simple: emails[type eq "work"].value
+	// - Nested: name.givenName
+	// - Filtered: addresses[type eq "work"]
+	// - Schema URN: urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:employeeNumber
 
-	parts := strings.SplitSeq(pathStr, ".")
-	for part := range parts {
+	var parts []string
+
+	// Check if this is a schema URN path
+	if strings.HasPrefix(pathStr, "urn:") {
+		// Schema URN paths have format: <schema-urn>:<attribute-path>
+		// Example: urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:employeeNumber
+		// The schema URN ends at ":User" or ":Group", then comes the attribute path
+
+		var schemaURN string
+		var attrPath string
+
+		if idx := strings.Index(pathStr, ":User:"); idx != -1 {
+			schemaURN = pathStr[:idx+5] // Include ":User"
+			attrPath = pathStr[idx+6:]  // Skip ":User:"
+		} else if idx := strings.Index(pathStr, ":Group:"); idx != -1 {
+			schemaURN = pathStr[:idx+6] // Include ":Group"
+			attrPath = pathStr[idx+7:]  // Skip ":Group:"
+		} else {
+			// Fallback: just the URN without attribute
+			schemaURN = pathStr
+			attrPath = ""
+		}
+
+		// First segment is the schema URN (maps to extension field)
+		parts = append(parts, schemaURN)
+
+		// If there's an attribute path, split it on dots
+		if attrPath != "" {
+			dotParts := strings.Split(attrPath, ".")
+			parts = append(parts, dotParts...)
+		}
+	} else {
+		// Normal path - split on dots
+		parts = strings.Split(pathStr, ".")
+	}
+
+	// Process each part into path segments
+	for _, part := range parts {
 		segment := PathSegment{}
 
 		// Check for filter
