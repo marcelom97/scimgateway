@@ -550,12 +550,14 @@ func compareEqual(a, b any) bool {
 		b = bVal.Elem().Interface()
 	}
 
-	// String comparison (case-sensitive per RFC 7644 Section 3.4.2.2)
-	// Note: Attribute names are case-insensitive, but values are case-sensitive
+	// String comparison - case-insensitive for practical compatibility
+	// RFC 7644 Section 3.4.2.2 specifies case-sensitive values, but most
+	// real-world SCIM implementations (including Microsoft) use case-insensitive
+	// filtering for usernames and other string attributes for better UX
 	aStr, aIsStr := a.(string)
 	bStr, bIsStr := b.(string)
 	if aIsStr && bIsStr {
-		return aStr == bStr
+		return strings.EqualFold(aStr, bStr)
 	}
 
 	// Handle comparison between bool and custom bool types (like Boolean)
@@ -582,7 +584,7 @@ func compareEqual(a, b any) bool {
 	return reflect.DeepEqual(a, b)
 }
 
-// contains checks if string a contains string b (case-sensitive per RFC 7644 Section 3.4.2.2)
+// contains checks if string a contains string b (case-insensitive)
 func contains(a, b any) bool {
 	aStr, ok := a.(string)
 	if !ok {
@@ -592,10 +594,10 @@ func contains(a, b any) bool {
 	if !ok {
 		return false
 	}
-	return strings.Contains(aStr, bStr)
+	return strings.Contains(strings.ToLower(aStr), strings.ToLower(bStr))
 }
 
-// startsWith checks if string a starts with string b (case-sensitive per RFC 7644 Section 3.4.2.2)
+// startsWith checks if string a starts with string b (case-insensitive)
 func startsWith(a, b any) bool {
 	aStr, ok := a.(string)
 	if !ok {
@@ -605,10 +607,10 @@ func startsWith(a, b any) bool {
 	if !ok {
 		return false
 	}
-	return strings.HasPrefix(aStr, bStr)
+	return strings.HasPrefix(strings.ToLower(aStr), strings.ToLower(bStr))
 }
 
-// endsWith checks if string a ends with string b (case-sensitive per RFC 7644 Section 3.4.2.2)
+// endsWith checks if string a ends with string b (case-insensitive)
 func endsWith(a, b any) bool {
 	aStr, ok := a.(string)
 	if !ok {
@@ -618,7 +620,7 @@ func endsWith(a, b any) bool {
 	if !ok {
 		return false
 	}
-	return strings.HasSuffix(aStr, bStr)
+	return strings.HasSuffix(strings.ToLower(aStr), strings.ToLower(bStr))
 }
 
 func compareGreater(a, b any) bool {

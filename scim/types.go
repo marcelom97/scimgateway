@@ -164,8 +164,8 @@ type MemberRef struct {
 type ListResponse[T any] struct {
 	Schemas      []string `json:"schemas"`
 	TotalResults int      `json:"totalResults"`
-	StartIndex   int      `json:"startIndex,omitempty"`
-	ItemsPerPage int      `json:"itemsPerPage,omitempty"`
+	StartIndex   int      `json:"startIndex"`
+	ItemsPerPage int      `json:"itemsPerPage"`
 	Resources    []T      `json:"Resources"`
 }
 

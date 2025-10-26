@@ -33,11 +33,11 @@ This library implements the complete SCIM 2.0 specification as defined in:
 All filter operators are fully implemented and tested:
 
 **Comparison Operators:**
-- ✅ `eq` (equal) - Case-sensitive comparison
+- ✅ `eq` (equal) - **Case-insensitive** string comparison for Microsoft compatibility
 - ✅ `ne` (not equal)
-- ✅ `co` (contains) - Substring search
-- ✅ `sw` (starts with)
-- ✅ `ew` (ends with)
+- ✅ `co` (contains) - **Case-insensitive** substring search
+- ✅ `sw` (starts with) - **Case-insensitive**
+- ✅ `ew` (ends with) - **Case-insensitive**
 - ✅ `pr` (present) - Attribute exists
 - ✅ `gt` (greater than) - Numeric/date comparison
 - ✅ `ge` (greater than or equal)
@@ -63,9 +63,10 @@ All filter operators are fully implemented and tested:
 - ✅ Works with simple and complex attributes
 
 #### Pagination (RFC 7644 Section 3.4.2.4)
-- ✅ `startIndex` - 1-based index (SCIM spec requirement)
+- ✅ `startIndex` - 1-based index (SCIM spec requirement), **always included** in responses
 - ✅ `count` - Number of results per page
 - ✅ `totalResults` - Total number of matching resources
+- ✅ `itemsPerPage` - **Always included** in responses (even when 0) for Microsoft SCIM validator compatibility
 - ✅ Proper handling of out-of-range indices
 
 #### Attribute Selection (RFC 7644 Section 3.4.2.5)
@@ -85,6 +86,7 @@ All PATCH operations are fully implemented:
 - ✅ Add to multi-valued attributes (arrays)
 - ✅ Add with path expressions
 - ✅ Add to complex attributes
+- ✅ **Auto-create array elements** - When adding to filtered path like `emails[type eq "work"].value` and no matching element exists, automatically creates element with filter criteria applied
 
 #### Remove Operation
 - ✅ Remove entire attributes
@@ -203,13 +205,15 @@ The library includes comprehensive tests covering all SCIM operations:
 - Nested parentheses with complex logic
 - Multiple AND/OR combinations
 - Filters on non-existent attributes
-- Case-sensitive comparisons
+- Case-insensitive string comparisons (Microsoft compatibility)
+- Boolean-to-string comparisons (e.g., `primary eq "True"`)
 - Date/timestamp comparisons
 
 **PATCH Operations:**
 - Path expressions with complex filters
 - Removing non-existent attributes (no-op)
 - Adding to non-existent arrays (create array)
+- Adding to filtered paths without matching elements (auto-create element with filter criteria)
 - Conflicting operations in same request
 
 **Bulk Operations:**
@@ -226,8 +230,17 @@ The library includes comprehensive tests covering all SCIM operations:
 
 ## Specification Compliance Notes
 
-### Case Sensitivity
-Per RFC 7644 Section 3.4.2.2, attribute names are case-insensitive, but this implementation treats them as case-sensitive for performance. Use exact attribute names from the schema.
+### Case Sensitivity (RFC 7644 Section 3.4.2.2)
+**Attribute Names**: Case-insensitive per RFC spec (e.g., `userName` matches `username`)
+
+**Filter Values**: RFC 7644 specifies case-sensitive comparison, but this implementation uses **case-insensitive** filtering for practical compatibility with Microsoft's SCIM validator and real-world SCIM providers. This means:
+- `userName eq "john.doe"` matches "John.Doe", "JOHN.DOE", etc.
+- `userName co "JOHN"` matches "john", "John", "JOHN"
+- All string operators (eq, ne, co, sw, ew) are case-insensitive
+
+**Boolean-String Comparison**: Filters can compare Boolean fields with string values:
+- `primary eq "True"` matches `Boolean(true)` (case-insensitive: "true", "True", "TRUE")
+- `primary eq "False"` matches `Boolean(false)` (case-insensitive: "false", "False", "FALSE")
 
 ### Attribute Precedence
 When both `attributes` and `excludedAttributes` are provided, the gateway returns HTTP 400 per RFC 7644 Section 3.4.2.5:
@@ -240,13 +253,37 @@ SCIM uses 1-based indexing (not 0-based). The gateway automatically adjusts `sta
 ### Multi-Valued Attribute Uniqueness
 The gateway enforces uniqueness on `emails[].value` and other multi-valued attributes with `uniqueness: true` in the schema definition.
 
+### PATCH Operation Behavior
+When using PATCH with filtered paths (e.g., `emails[type eq "work"].value`):
+- **If matching element exists**: Updates the element's sub-attribute
+- **If no matching element exists**: Creates a new element with filter criteria automatically applied (e.g., creates email with `type="work"`)
+
+This behavior ensures PATCH operations work correctly for bulk provisioning scenarios where array elements may not exist yet.
+
+### Microsoft SCIM Validator Compatibility
+This implementation includes several enhancements for Microsoft SCIM validator compatibility:
+
+1. **Case-Insensitive Filtering**: All string comparisons are case-insensitive
+2. **Always Include Pagination Fields**: `startIndex` and `itemsPerPage` are always included in ListResponse, even when 0
+3. **Boolean-String Comparison**: Supports comparing Boolean fields with string representations ("True"/"False")
+
+These enhancements ensure the gateway passes Microsoft's SCIM validator tests while remaining compatible with the SCIM 2.0 specification.
+
 ## Known Deviations
+
+### Case-Insensitive Filtering (Intentional)
+**RFC 7644 Section 3.4.2.2** specifies case-sensitive value comparison for filters. However, this implementation uses **case-insensitive** comparison for practical reasons:
+- Microsoft's SCIM validator requires case-insensitive filtering
+- Most real-world SCIM providers (Azure AD, Okta, etc.) use case-insensitive filtering
+- Better user experience (users don't need to remember exact casing)
+
+**Rationale**: While this deviates from the RFC, it ensures compatibility with the largest SCIM ecosystem (Microsoft Azure AD) and matches real-world expectations. Attribute names remain case-insensitive per spec.
 
 ### Schema Discovery
 Custom schema extensions can be stored and retrieved, but cannot be added to the `/Schemas` endpoint without code modifications. This is a design choice to keep the implementation simple.
 
 ### Internationalization
-String comparisons use Go's default string equality, which may not handle all Unicode normalization forms identically. For full i18n support, consider normalizing strings at the plugin level.
+String comparisons use Go's default string equality and case-folding (`strings.EqualFold`), which may not handle all Unicode normalization forms identically. For full i18n support, consider normalizing strings at the plugin level.
 
 ## Testing Your SCIM Client
 

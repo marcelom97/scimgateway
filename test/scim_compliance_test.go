@@ -125,8 +125,10 @@ func createTestUsers(t *testing.T, handler http.Handler) {
 	}
 }
 
-// testFilterCaseSensitivity tests RFC 7644 Section 3.4.2.2 compliance
-// Filter values MUST be case-sensitive
+// testFilterCaseSensitivity tests filter case handling
+// NOTE: RFC 7644 Section 3.4.2.2 specifies case-sensitive values, but this
+// implementation uses case-insensitive filtering for practical compatibility
+// with real-world SCIM providers (including Microsoft's SCIM validator)
 func testFilterCaseSensitivity(t *testing.T, handler http.Handler) {
 	tests := []struct {
 		name          string
@@ -141,10 +143,10 @@ func testFilterCaseSensitivity(t *testing.T, handler http.Handler) {
 			description:   "Exact match with correct case should find user",
 		},
 		{
-			name:          "eq_wrong_case",
+			name:          "eq_different_case",
 			filter:        `userName eq "JOHN.DOE"`,
-			expectedCount: 0,
-			description:   "Exact match with wrong case should NOT find user (case-sensitive)",
+			expectedCount: 1,
+			description:   "Exact match with different case should find user (case-insensitive)",
 		},
 		{
 			name:          "co_correct_case",
@@ -153,10 +155,10 @@ func testFilterCaseSensitivity(t *testing.T, handler http.Handler) {
 			description:   "Contains with correct case should find user",
 		},
 		{
-			name:          "co_wrong_case",
+			name:          "co_different_case",
 			filter:        `name.givenName co "alice"`,
-			expectedCount: 0,
-			description:   "Contains with wrong case should NOT find user (case-sensitive)",
+			expectedCount: 1,
+			description:   "Contains with different case should find user (case-insensitive)",
 		},
 		{
 			name:          "sw_correct_case",
@@ -165,10 +167,10 @@ func testFilterCaseSensitivity(t *testing.T, handler http.Handler) {
 			description:   "Starts with correct case should find Bob.Builder",
 		},
 		{
-			name:          "sw_wrong_case",
+			name:          "sw_different_case",
 			filter:        `userName sw "bob"`,
-			expectedCount: 0,
-			description:   "Starts with wrong case should NOT find user (case-sensitive)",
+			expectedCount: 1,
+			description:   "Starts with different case should find user (case-insensitive)",
 		},
 		{
 			name:          "ew_correct_case",
@@ -177,10 +179,10 @@ func testFilterCaseSensitivity(t *testing.T, handler http.Handler) {
 			description:   "Ends with correct case should find john.doe",
 		},
 		{
-			name:          "ew_wrong_case",
+			name:          "ew_different_case",
 			filter:        `userName ew "DOE"`,
-			expectedCount: 0,
-			description:   "Ends with wrong case should NOT find user (case-sensitive)",
+			expectedCount: 1,
+			description:   "Ends with different case should find user (case-insensitive)",
 		},
 	}
 
