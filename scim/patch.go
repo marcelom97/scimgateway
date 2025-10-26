@@ -176,21 +176,37 @@ func (pp *PatchProcessor) addToPath(resource any, path *Path, value any) error {
 		if segment.Filter != nil && (field.Kind() == reflect.Slice || field.Kind() == reflect.Array) {
 			// Find the first matching element in the array
 			matchFound := false
+			var matchedElem reflect.Value
 			for j := 0; j < field.Len(); j++ {
 				elem := field.Index(j)
 				if segment.Filter.Matches(elem.Interface()) {
-					// Navigate into the matching element
-					if elem.Kind() == reflect.Ptr {
-						target = elem.Elem()
-					} else {
-						target = elem
-					}
+					matchedElem = elem
 					matchFound = true
 					break
 				}
 			}
+
 			if !matchFound {
-				return ErrNoTarget(fmt.Sprintf("no matching element found for filter in attribute %s", segment.Attribute))
+				// For ADD operations, create a new element with the filter criteria
+				// and append it to the array
+				elemType := field.Type().Elem()
+				newElem, err := pp.createElementFromFilter(elemType, segment.Filter)
+				if err != nil {
+					return ErrNoTarget(fmt.Sprintf("failed to create element for filter in attribute %s: %v", segment.Attribute, err))
+				}
+
+				// Append the new element to the array
+				field.Set(reflect.Append(field, newElem))
+
+				// Navigate into the newly created element (last element in array)
+				matchedElem = field.Index(field.Len() - 1)
+			}
+
+			// Navigate into the matching (or newly created) element
+			if matchedElem.Kind() == reflect.Ptr {
+				target = matchedElem.Elem()
+			} else {
+				target = matchedElem
 			}
 			parentField = reflect.Value{} // Clear parent field
 		} else if field.Kind() == reflect.Map {
@@ -211,6 +227,27 @@ func (pp *PatchProcessor) addToPath(resource any, path *Path, value any) error {
 	}
 
 	return nil
+}
+
+// createElementFromFilter creates a new array element with filter criteria applied
+// For example, if filter is "type eq \"work\"", it creates an element with type="work"
+func (pp *PatchProcessor) createElementFromFilter(elemType reflect.Type, filter *AttributeExpression) (reflect.Value, error) {
+	// Create new element
+	newElem := reflect.New(elemType).Elem()
+
+	// If filter is a simple equality check (e.g., type eq "work"), set that attribute
+	if filter != nil && filter.Operator == "eq" {
+		// Find the field to set
+		field := findField(newElem, filter.AttributePath)
+		if field.IsValid() && field.CanSet() {
+			// Set the value from the filter
+			if err := pp.setValue(field, filter.Value); err == nil {
+				return newElem, nil
+			}
+		}
+	}
+
+	return newElem, nil
 }
 
 // removeFromPath removes value from a specific path

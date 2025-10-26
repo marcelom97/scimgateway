@@ -296,15 +296,23 @@ func TestPatchProcessor_ReplaceFilteredArraySubAttribute(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "replace non-existent filter match should fail",
+			name: "replace non-existent filter match creates new element",
 			patch: &PatchOp{
 				Schemas: []string{SchemaPatchOp},
 				Operations: []PatchOperation{
 					{Op: "replace", Path: "emails[type eq \"business\"].value", Value: "test@business.com"},
 				},
 			},
-			checkFunc: func(u *User) bool { return true },
-			wantErr:   true,
+			checkFunc: func(u *User) bool {
+				// Should have created a new email with type="business"
+				for _, email := range u.Emails {
+					if email.Type == "business" && email.Value == "test@business.com" {
+						return true
+					}
+				}
+				return false
+			},
+			wantErr: false,
 		},
 	}
 
@@ -519,6 +527,120 @@ func TestParsePath_URNPaths(t *testing.T) {
 
 			if len(path.Segments) >= 2 && path.Segments[1].Attribute != tt.wantSecond {
 				t.Errorf("second attribute = %v, want %v", path.Segments[1].Attribute, tt.wantSecond)
+			}
+		})
+	}
+}
+
+// TestPatchProcessor_AddWithFilteredPath tests ADD operations with filtered paths
+// that create new array elements when no match exists
+func TestPatchProcessor_AddWithFilteredPath(t *testing.T) {
+	user := &User{
+		UserName: "john.doe",
+		Emails:   []Email{},      // Empty array
+		Roles:    []Role{},        // Empty array
+		Addresses: []Address{},   // Empty array
+	}
+
+	tests := []struct {
+		name      string
+		patch     *PatchOp
+		checkFunc func(*User) bool
+		wantErr   bool
+	}{
+		{
+			name: "add creates new email with filter criteria",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "add", Path: "emails[type eq \"work\"].value", Value: "john@work.com"},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				if len(u.Emails) != 1 {
+					return false
+				}
+				return u.Emails[0].Type == "work" && u.Emails[0].Value == "john@work.com"
+			},
+			wantErr: false,
+		},
+		{
+			name: "add to existing element with matching filter",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "add", Path: "emails[type eq \"work\"].primary", Value: true},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				// Should update the existing "work" email from previous test
+				for _, email := range u.Emails {
+					if email.Type == "work" && email.Value == "john@work.com" && bool(email.Primary) {
+						return true
+					}
+				}
+				return false
+			},
+			wantErr: false,
+		},
+		{
+			name: "add creates second email with different filter",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "add", Path: "emails[type eq \"home\"].value", Value: "john@home.com"},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				if len(u.Emails) != 2 {
+					return false
+				}
+				hasHome := false
+				for _, email := range u.Emails {
+					if email.Type == "home" && email.Value == "john@home.com" {
+						hasHome = true
+					}
+				}
+				return hasHome
+			},
+			wantErr: false,
+		},
+		{
+			name: "add multiple attributes to filtered element",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "add", Path: "addresses[type eq \"work\"].formatted", Value: "123 Main St"},
+					{Op: "add", Path: "addresses[type eq \"work\"].locality", Value: "New York"},
+					{Op: "add", Path: "addresses[type eq \"work\"].country", Value: "USA"},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				if len(u.Addresses) != 1 {
+					return false
+				}
+				addr := u.Addresses[0]
+				return addr.Type == "work" &&
+					addr.Formatted == "123 Main St" &&
+					addr.Locality == "New York" &&
+					addr.Country == "USA"
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			processor := NewPatchProcessor()
+			err := processor.ApplyPatch(user, tt.patch)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ApplyPatch() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && !tt.checkFunc(user) {
+				t.Errorf("ApplyPatch() result check failed")
 			}
 		})
 	}
