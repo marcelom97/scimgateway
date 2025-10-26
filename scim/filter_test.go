@@ -165,10 +165,17 @@ func TestCompareEqual_BooleanType(t *testing.T) {
 		{"bool(false) == bool(false)", false, false, true},
 		{"bool(true) != bool(false)", true, false, false},
 
-		// Test with other types (should not match)
-		{"Boolean(true) != string", Boolean(true), "true", false},
+		// Test with other types
+		{"Boolean(true) == string \"true\"", Boolean(true), "true", true},
+		{"Boolean(true) == string \"True\"", Boolean(true), "True", true},
+		{"Boolean(false) == string \"false\"", Boolean(false), "false", true},
+		{"Boolean(false) == string \"False\"", Boolean(false), "False", true},
+		{"bool(true) == string \"true\"", true, "true", true},
+		{"bool(true) == string \"True\"", true, "True", true},
+		{"bool(false) == string \"false\"", false, "false", true},
+		{"bool(false) == string \"False\"", false, "False", true},
 		{"Boolean(true) != int", Boolean(true), 1, false},
-		{"bool(true) != string", true, "true", false},
+		{"Boolean(true) != string \"yes\"", Boolean(true), "yes", false},
 	}
 
 	for _, tt := range tests {

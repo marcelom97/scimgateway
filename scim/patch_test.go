@@ -523,3 +523,141 @@ func TestParsePath_URNPaths(t *testing.T) {
 		})
 	}
 }
+
+// TestPatchProcessor_BooleanStringFilterComparison tests PATCH operations with
+// filtered paths where boolean fields are compared to string representations
+func TestPatchProcessor_BooleanStringFilterComparison(t *testing.T) {
+	user := &User{
+		UserName: "john.doe",
+		Emails: []Email{
+			{Value: "john@work.com", Type: "work", Primary: Boolean(true)},
+			{Value: "john@home.com", Type: "home", Primary: Boolean(false)},
+		},
+		Roles: []Role{
+			{Value: "admin", Type: "work", Primary: Boolean(true)},
+			{Value: "user", Type: "app", Primary: Boolean(false)},
+		},
+	}
+
+	tests := []struct {
+		name      string
+		patch     *PatchOp
+		checkFunc func(*User) bool
+		wantErr   bool
+	}{
+		{
+			name: "filter with string \"True\" matches Boolean(true)",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "replace", Path: "emails[primary eq \"True\"].value", Value: "newemail@work.com"},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				for _, email := range u.Emails {
+					if bool(email.Primary) {
+						return email.Value == "newemail@work.com"
+					}
+				}
+				return false
+			},
+			wantErr: false,
+		},
+		{
+			name: "filter with string \"true\" (lowercase) matches Boolean(true)",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "replace", Path: "roles[primary eq \"true\"].value", Value: "superadmin"},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				for _, role := range u.Roles {
+					if bool(role.Primary) {
+						return role.Value == "superadmin"
+					}
+				}
+				return false
+			},
+			wantErr: false,
+		},
+		{
+			name: "filter with string \"False\" matches Boolean(false)",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "replace", Path: "emails[primary eq \"False\"].value", Value: "newhome@example.com"},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				for _, email := range u.Emails {
+					if !bool(email.Primary) {
+						return email.Value == "newhome@example.com"
+					}
+				}
+				return false
+			},
+			wantErr: false,
+		},
+		{
+			name: "filter with string \"false\" (lowercase) matches Boolean(false)",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "replace", Path: "roles[primary eq \"false\"].value", Value: "guest"},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				for _, role := range u.Roles {
+					if !bool(role.Primary) {
+						return role.Value == "guest"
+					}
+				}
+				return false
+			},
+			wantErr: false,
+		},
+		{
+			name: "multiple operations with boolean string filters",
+			patch: &PatchOp{
+				Schemas: []string{SchemaPatchOp},
+				Operations: []PatchOperation{
+					{Op: "replace", Path: "emails[primary eq \"True\"].type", Value: "business"},
+					{Op: "replace", Path: "roles[primary eq \"True\"].display", Value: "Administrator"},
+				},
+			},
+			checkFunc: func(u *User) bool {
+				emailOk := false
+				roleOk := false
+				for _, email := range u.Emails {
+					if bool(email.Primary) && email.Type == "business" {
+						emailOk = true
+					}
+				}
+				for _, role := range u.Roles {
+					if bool(role.Primary) && role.Display == "Administrator" {
+						roleOk = true
+					}
+				}
+				return emailOk && roleOk
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			processor := NewPatchProcessor()
+			err := processor.ApplyPatch(user, tt.patch)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ApplyPatch() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && !tt.checkFunc(user) {
+				t.Errorf("ApplyPatch() result check failed")
+			}
+		})
+	}
+}

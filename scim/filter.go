@@ -568,6 +568,17 @@ func compareEqual(a, b any) bool {
 		return aVal.Convert(reflect.TypeOf(true)).Bool() == bVal.Convert(reflect.TypeOf(true)).Bool()
 	}
 
+	// Handle comparison between boolean and string representation
+	// This handles cases like: primary eq "True" where primary is Boolean type
+	if aVal.Kind() == reflect.Bool && bIsStr {
+		boolVal := aVal.Bool()
+		return (boolVal && strings.ToLower(bStr) == "true") || (!boolVal && strings.ToLower(bStr) == "false")
+	}
+	if bVal.Kind() == reflect.Bool && aIsStr {
+		boolVal := bVal.Bool()
+		return (boolVal && strings.ToLower(aStr) == "true") || (!boolVal && strings.ToLower(aStr) == "false")
+	}
+
 	return reflect.DeepEqual(a, b)
 }
 
