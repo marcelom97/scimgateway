@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"os"
 
-	gateway "github.com/marcelom97/scimgateway"
+	"github.com/marcelom97/scimgateway"
 	"github.com/marcelom97/scimgateway/config"
 	"github.com/marcelom97/scimgateway/memory"
 )
@@ -32,7 +32,7 @@ func main() {
 	}
 
 	// Create gateway
-	gw := gateway.New(cfg)
+	gw := scimgateway.New(cfg)
 
 	// Optional: Setup structured logging
 	// Pass nil to disable logging (default), or provide your own *slog.Logger

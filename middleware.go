@@ -1,4 +1,4 @@
-package gateway
+package scimgateway
 
 import (
 	"log/slog"

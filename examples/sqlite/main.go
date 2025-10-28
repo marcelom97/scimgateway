@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"os"
 
-	gateway "github.com/marcelom97/scimgateway"
+	"github.com/marcelom97/scimgateway"
 	"github.com/marcelom97/scimgateway/config"
 )
 
@@ -31,7 +31,7 @@ func main() {
 	}
 
 	// Create gateway
-	gw := gateway.New(cfg)
+	gw := scimgateway.New(cfg)
 
 	// Optional: Setup structured logging
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
