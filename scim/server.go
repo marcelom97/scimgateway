@@ -15,17 +15,20 @@ func discardLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
 
-// PluginGetter defines the interface for getting plugin operations
+// PluginGetter defines the interface for getting plugin operations.
+//
+// Design Note: GetUser and GetGroup accept attributes []string rather than full QueryParams.
+// This is intentional - single resource retrieval doesn't need filters, pagination, or sorting.
+// The 'attributes' parameter enables plugins to optimize queries (e.g., SQL column projection),
+// while 'excludedAttributes' is efficiently handled by the server layer after retrieval.
 type PluginGetter interface {
 	GetUsers(ctx context.Context, baseEntity string, params QueryParams) (*ListResponse[*User], error)
 	CreateUser(ctx context.Context, baseEntity string, user *User) (*User, error)
-	// TODO: Replace attributes with QueryParams for consistency
 	GetUser(ctx context.Context, baseEntity string, id string, attributes []string) (*User, error)
 	ModifyUser(ctx context.Context, baseEntity string, id string, patch *PatchOp) error
 	DeleteUser(ctx context.Context, baseEntity string, id string) error
 	GetGroups(ctx context.Context, baseEntity string, params QueryParams) (*ListResponse[*Group], error)
 	CreateGroup(ctx context.Context, baseEntity string, group *Group) (*Group, error)
-	// TODO: Replace attributes with QueryParams for consistency
 	GetGroup(ctx context.Context, baseEntity string, id string, attributes []string) (*Group, error)
 	ModifyGroup(ctx context.Context, baseEntity string, id string, patch *PatchOp) error
 	DeleteGroup(ctx context.Context, baseEntity string, id string) error
