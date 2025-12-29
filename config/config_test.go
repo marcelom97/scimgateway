@@ -20,7 +20,7 @@ func TestConfigValidate(t *testing.T) {
 					Port:    8080,
 				},
 				Plugins: []PluginConfig{
-					{Name: "test", Type: "memory"},
+					{Name: "test"},
 				},
 			},
 			wantErr: false,
@@ -101,8 +101,8 @@ func TestConfigValidate(t *testing.T) {
 					Port:    8080,
 				},
 				Plugins: []PluginConfig{
-					{Name: "test", Type: "memory"},
-					{Name: "test", Type: "memory"},
+					{Name: "test"},
+					{Name: "test"},
 				},
 			},
 			wantErr:     true,
@@ -116,7 +116,7 @@ func TestConfigValidate(t *testing.T) {
 					Port:    8080,
 				},
 				Plugins: []PluginConfig{
-					{Name: "", Type: "memory"},
+					{Name: ""},
 				},
 			},
 			wantErr:     true,
@@ -198,7 +198,7 @@ func TestConfigValidate(t *testing.T) {
 					Port:    443,
 				},
 				Plugins: []PluginConfig{
-					{Name: "prod", Type: "database"},
+					{Name: "prod"},
 				},
 			},
 			wantErr: false,

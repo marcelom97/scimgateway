@@ -536,10 +536,10 @@ func TestParsePath_URNPaths(t *testing.T) {
 // that create new array elements when no match exists
 func TestPatchProcessor_AddWithFilteredPath(t *testing.T) {
 	user := &User{
-		UserName: "john.doe",
-		Emails:   []Email{},      // Empty array
-		Roles:    []Role{},        // Empty array
-		Addresses: []Address{},   // Empty array
+		UserName:  "john.doe",
+		Emails:    []Email{},   // Empty array
+		Roles:     []Role{},    // Empty array
+		Addresses: []Address{}, // Empty array
 	}
 
 	tests := []struct {

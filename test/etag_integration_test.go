@@ -20,7 +20,7 @@ func TestETagIntegration(t *testing.T) {
 			BaseURL: "http://localhost:8080",
 			Port:    8080,
 		},
-		Plugins: []config.PluginConfig{{Name: "test", Type: "memory"}},
+		Plugins: []config.PluginConfig{{Name: "test"}},
 	}
 	gw := gateway.New(cfg)
 	memPlugin := memory.New("memory")

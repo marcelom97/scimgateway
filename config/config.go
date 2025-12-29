@@ -28,9 +28,9 @@ func (e ValidationErrors) Error() string {
 	}
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("config validation failed with %d errors:\n", len(e)))
+	fmt.Fprintf(&sb, "config validation failed with %d errors:\n", len(e))
 	for i, err := range e {
-		sb.WriteString(fmt.Sprintf("  %d. %s\n", i+1, err.Error()))
+		fmt.Fprintf(&sb, "  %d. %s\n", i+1, err.Error())
 	}
 	return sb.String()
 }
@@ -186,12 +186,9 @@ type TLS struct {
 
 // PluginConfig represents plugin-specific configuration
 type PluginConfig struct {
-	Name string
-	// Deprecated: Use Type and BaseEntity instead
-	Type       string
-	BaseEntity string
-	Auth       *AuthConfig
-	Config     map[string]any
+	Name   string
+	Auth   *AuthConfig
+	Config map[string]any
 }
 
 // AuthConfig represents authentication configuration with type-safe config
@@ -284,11 +281,7 @@ func DefaultConfig() *Config {
 			Port:    8880,
 		},
 		Plugins: []PluginConfig{
-			{
-				Name:       "memory",
-				Type:       "memory",
-				BaseEntity: "default",
-			},
+			{Name: "memory"},
 		},
 	}
 }

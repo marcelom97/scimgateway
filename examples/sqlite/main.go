@@ -19,7 +19,6 @@ func main() {
 		Plugins: []config.PluginConfig{
 			{
 				Name: "sqlite",
-				Type: "sqlite",
 				Auth: &config.AuthConfig{
 					Type: "bearer",
 					Bearer: &config.BearerAuth{

@@ -68,7 +68,7 @@ func TestNew(t *testing.T) {
 			Port:    8080,
 		},
 		Plugins: []config.PluginConfig{
-			{Name: "test", Type: "memory"},
+			{Name: "test"},
 		},
 	}
 
@@ -127,7 +127,7 @@ func TestInitialize(t *testing.T) {
 			Port:    8080,
 		},
 		Plugins: []config.PluginConfig{
-			{Name: "test", Type: "memory"},
+			{Name: "test"},
 		},
 	}
 
@@ -156,7 +156,7 @@ func TestHandler(t *testing.T) {
 			Port:    8080,
 		},
 		Plugins: []config.PluginConfig{
-			{Name: "test", Type: "memory"},
+			{Name: "test"},
 		},
 	}
 
@@ -212,7 +212,7 @@ func TestConfig(t *testing.T) {
 			Port:    8080,
 		},
 		Plugins: []config.PluginConfig{
-			{Name: "test", Type: "memory"},
+			{Name: "test"},
 		},
 	}
 
@@ -256,7 +256,7 @@ func TestGatewayIntegration(t *testing.T) {
 		},
 		Plugins: []config.PluginConfig{
 			{
-				Name: "test", Type: "memory",
+				Name: "test",
 				Auth: &config.AuthConfig{
 					Type: "basic",
 					Basic: &config.BasicAuth{
@@ -311,7 +311,7 @@ func TestAttributeSelectionMutualExclusivity(t *testing.T) {
 			Port:    8880,
 		},
 		Plugins: []config.PluginConfig{
-			{Name: "test", Type: "memory"},
+			{Name: "test"},
 		},
 	}
 
@@ -474,7 +474,7 @@ func TestInitializeWithLogger(t *testing.T) {
 			Port:    8080,
 		},
 		Plugins: []config.PluginConfig{
-			{Name: "testplugin", Type: "memory"},
+			{Name: "testplugin"},
 		},
 	}
 
@@ -509,7 +509,7 @@ func TestInitializeWithoutLogger(t *testing.T) {
 			Port:    8080,
 		},
 		Plugins: []config.PluginConfig{
-			{Name: "test", Type: "memory"},
+			{Name: "test"},
 		},
 	}
 
@@ -541,7 +541,7 @@ func TestPluginNotFoundLogging(t *testing.T) {
 			Port:    8080,
 		},
 		Plugins: []config.PluginConfig{
-			{Name: "test", Type: "memory"},
+			{Name: "test"},
 		},
 	}
 
@@ -589,7 +589,7 @@ func TestLoggerNilSafety(t *testing.T) {
 			Port:    8080,
 		},
 		Plugins: []config.PluginConfig{
-			{Name: "test", Type: "memory"},
+			{Name: "test"},
 		},
 	}
 
@@ -749,7 +749,7 @@ func TestInitializeWithNoPluginsRegistered(t *testing.T) {
 			Port:    8080,
 		},
 		Plugins: []config.PluginConfig{
-			{Name: "test", Type: "memory"},
+			{Name: "test"},
 		},
 	}
 
@@ -784,7 +784,7 @@ func TestRequestLoggingIntegration(t *testing.T) {
 			Port:    8080,
 		},
 		Plugins: []config.PluginConfig{
-			{Name: "test", Type: "memory"},
+			{Name: "test"},
 		},
 	}
 
@@ -844,7 +844,6 @@ func TestGateway_PerPluginAuth_SinglePlugin_BearerAuth(t *testing.T) {
 		Plugins: []config.PluginConfig{
 			{
 				Name: "test",
-				Type: "memory",
 				Auth: &config.AuthConfig{
 					Type: "bearer",
 					Bearer: &config.BearerAuth{
@@ -921,7 +920,6 @@ func TestGateway_PerPluginAuth_SinglePlugin_BasicAuth(t *testing.T) {
 		Plugins: []config.PluginConfig{
 			{
 				Name: "test",
-				Type: "memory",
 				Auth: &config.AuthConfig{
 					Type: "basic",
 					Basic: &config.BasicAuth{
@@ -1007,7 +1005,6 @@ func TestGateway_PerPluginAuth_MultiplePlugins_DifferentAuth(t *testing.T) {
 		Plugins: []config.PluginConfig{
 			{
 				Name: "plugin1",
-				Type: "memory",
 				Auth: &config.AuthConfig{
 					Type: "bearer",
 					Bearer: &config.BearerAuth{
@@ -1017,7 +1014,6 @@ func TestGateway_PerPluginAuth_MultiplePlugins_DifferentAuth(t *testing.T) {
 			},
 			{
 				Name: "plugin2",
-				Type: "memory",
 				Auth: &config.AuthConfig{
 					Type: "basic",
 					Basic: &config.BasicAuth{
@@ -1028,7 +1024,6 @@ func TestGateway_PerPluginAuth_MultiplePlugins_DifferentAuth(t *testing.T) {
 			},
 			{
 				Name: "plugin3",
-				Type: "memory",
 				// No auth for plugin3
 			},
 		},
@@ -1186,7 +1181,6 @@ func TestGateway_PerPluginAuth_DifferentEndpoints(t *testing.T) {
 		Plugins: []config.PluginConfig{
 			{
 				Name: "protected",
-				Type: "memory",
 				Auth: &config.AuthConfig{
 					Type: "bearer",
 					Bearer: &config.BearerAuth{
@@ -1254,7 +1248,6 @@ func TestGateway_PerPluginAuth_ConfigBasedAuth(t *testing.T) {
 		Plugins: []config.PluginConfig{
 			{
 				Name: "test",
-				Type: "memory",
 				Auth: &config.AuthConfig{
 					Type: "bearer",
 					Bearer: &config.BearerAuth{
@@ -1307,7 +1300,7 @@ func TestGateway_PerPluginAuth_NoPlugins(t *testing.T) {
 			Port:    8080,
 		},
 		Plugins: []config.PluginConfig{
-			{Name: "dummy", Type: "memory"},
+			{Name: "dummy"},
 		},
 	}
 
