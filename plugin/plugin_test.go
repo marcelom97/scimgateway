@@ -2,6 +2,8 @@ package plugin
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/marcelom97/scimgateway/config"
@@ -172,7 +174,86 @@ func TestManagerList(t *testing.T) {
 	}
 }
 
-// TODO: Add concurrent access test after adding mutex to Manager
+// TestManager_ConcurrentAccess verifies thread-safe access to Manager
+func TestManager_ConcurrentAccess(t *testing.T) {
+	manager := NewManager()
+	plugin1 := &mockPlugin{name: "plugin1"}
+	plugin2 := &mockPlugin{name: "plugin2"}
+
+	pluginCfg1 := &config.PluginConfig{
+		Name: "plugin1",
+		Auth: &config.AuthConfig{
+			Type:   "bearer",
+			Bearer: &config.BearerAuth{Token: "token1"},
+		},
+	}
+
+	pluginCfg2 := &config.PluginConfig{
+		Name: "plugin2",
+		Auth: &config.AuthConfig{
+			Type:  "basic",
+			Basic: &config.BasicAuth{Username: "user", Password: "pass"},
+		},
+	}
+
+	// Register initial plugins
+	manager.Register(plugin1, pluginCfg1)
+	manager.Register(plugin2, pluginCfg2)
+
+	// Run concurrent operations
+	var wg sync.WaitGroup
+	errChan := make(chan error, 200)
+
+	// Concurrent reads via Get()
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			pluginName := "plugin1"
+			if n%2 == 0 {
+				pluginName = "plugin2"
+			}
+			if _, ok := manager.Get(pluginName); !ok {
+				errChan <- fmt.Errorf("failed to get %s", pluginName)
+			}
+		}(i)
+	}
+
+	// Concurrent reads via GetAuthenticator()
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			pluginName := "plugin1"
+			if n%2 == 0 {
+				pluginName = "plugin2"
+			}
+			if _, ok := manager.GetAuthenticator(pluginName); !ok {
+				errChan <- fmt.Errorf("failed to get authenticator for %s", pluginName)
+			}
+		}(i)
+	}
+
+	// Concurrent List() operations
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			list := manager.List()
+			if len(list) != 2 {
+				errChan <- fmt.Errorf("expected 2 plugins, got %d", len(list))
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	// Check for errors
+	for err := range errChan {
+		t.Error(err)
+	}
+}
 
 // ============================================================================
 // Manager Authentication Tests
@@ -448,48 +529,5 @@ func TestManager_RegisterWithAuth_ThenRegisterWithoutAuth(t *testing.T) {
 	_, ok = manager.GetAuthenticator("test")
 	if ok {
 		t.Error("Expected no authenticator after registering with nil config")
-	}
-}
-
-func TestManager_ConcurrentAccess(t *testing.T) {
-	// Note: This is a basic test. Real concurrent safety would require
-	// adding sync.RWMutex to Manager, which is not currently implemented.
-	// This test just verifies basic functionality doesn't panic.
-
-	manager := NewManager()
-
-	// Register multiple plugins
-	for i := 0; i < 10; i++ {
-		plugin := &mockPlugin{name: string(rune('a' + i))}
-		if i%2 == 0 {
-			pluginCfg := &config.PluginConfig{
-				Name: string(rune('a' + i)),
-				Auth: &config.AuthConfig{
-					Type:   "bearer",
-					Bearer: &config.BearerAuth{Token: "token"},
-				},
-			}
-			manager.Register(plugin, pluginCfg)
-		} else {
-			manager.Register(plugin, nil)
-		}
-	}
-
-	// Verify all registered
-	names := manager.List()
-	if len(names) != 10 {
-		t.Errorf("Expected 10 plugins, got %d", len(names))
-	}
-
-	// Verify authenticators
-	authCount := 0
-	for _, name := range names {
-		if _, ok := manager.GetAuthenticator(name); ok {
-			authCount++
-		}
-	}
-
-	if authCount != 5 {
-		t.Errorf("Expected 5 authenticators, got %d", authCount)
 	}
 }
