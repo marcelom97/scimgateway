@@ -21,7 +21,7 @@ func (p *CustomPlugin) Name() string {
 	return p.name
 }
 
-func (p *CustomPlugin) GetUsers(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.User, error) {
+func (p *CustomPlugin) GetUsers(ctx context.Context, params scim.QueryParams) ([]*scim.User, error) {
 	// Return hardcoded users for demonstration
 	// The adapter layer will handle filtering, pagination, and attribute selection
 	users := []*scim.User{
@@ -42,41 +42,41 @@ func (p *CustomPlugin) GetUsers(ctx context.Context, baseEntity string, params s
 	return users, nil
 }
 
-func (p *CustomPlugin) CreateUser(ctx context.Context, baseEntity string, user *scim.User) (*scim.User, error) {
+func (p *CustomPlugin) CreateUser(ctx context.Context, user *scim.User) (*scim.User, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (p *CustomPlugin) GetUser(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.User, error) {
+func (p *CustomPlugin) GetUser(ctx context.Context, id string, attributes []string) (*scim.User, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (p *CustomPlugin) ModifyUser(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error {
+func (p *CustomPlugin) ModifyUser(ctx context.Context, id string, patch *scim.PatchOp) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (p *CustomPlugin) DeleteUser(ctx context.Context, baseEntity string, id string) error {
+func (p *CustomPlugin) DeleteUser(ctx context.Context, id string) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (p *CustomPlugin) GetGroups(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.Group, error) {
+func (p *CustomPlugin) GetGroups(ctx context.Context, params scim.QueryParams) ([]*scim.Group, error) {
 	// Return empty slice for demonstration
 	// The adapter layer will handle filtering, pagination, and attribute selection
 	return []*scim.Group{}, nil
 }
 
-func (p *CustomPlugin) CreateGroup(ctx context.Context, baseEntity string, group *scim.Group) (*scim.Group, error) {
+func (p *CustomPlugin) CreateGroup(ctx context.Context, group *scim.Group) (*scim.Group, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (p *CustomPlugin) GetGroup(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.Group, error) {
+func (p *CustomPlugin) GetGroup(ctx context.Context, id string, attributes []string) (*scim.Group, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (p *CustomPlugin) ModifyGroup(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error {
+func (p *CustomPlugin) ModifyGroup(ctx context.Context, id string, patch *scim.PatchOp) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (p *CustomPlugin) DeleteGroup(ctx context.Context, baseEntity string, id string) error {
+func (p *CustomPlugin) DeleteGroup(ctx context.Context, id string) error {
 	return fmt.Errorf("not implemented")
 }
 

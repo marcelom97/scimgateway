@@ -304,7 +304,7 @@ func (p *MyPlugin) Name() string {
     return p.name
 }
 
-func (p *MyPlugin) GetUsers(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.User, error) {
+func (p *MyPlugin) GetUsers(ctx context.Context, params scim.QueryParams) ([]*scim.User, error) {
     // Simple approach: return all users, adapter handles filtering/pagination
     users := p.fetchAllUsers()
     return users, nil
@@ -315,7 +315,7 @@ func (p *MyPlugin) GetUsers(ctx context.Context, baseEntity string, params scim.
     // }
 }
 
-func (p *MyPlugin) CreateUser(ctx context.Context, baseEntity string, user *scim.User) (*scim.User, error) {
+func (p *MyPlugin) CreateUser(ctx context.Context, user *scim.User) (*scim.User, error) {
     // Create user in your backend
     return user, nil
 }
@@ -631,7 +631,7 @@ err := gw.Initialize()
 Plugins can return all data and let the adapter handle filtering (simple approach), or they can optimize by processing filters natively:
 
 ```go
-func (p *MyPlugin) GetUsers(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.User, error) {
+func (p *MyPlugin) GetUsers(ctx context.Context, params scim.QueryParams) ([]*scim.User, error) {
     // Optimized: convert SCIM filter to SQL WHERE clause
     if params.Filter != "" {
         sqlWhere := convertSCIMFilterToSQL(params.Filter)

@@ -26,7 +26,7 @@ func TestAttributeSelection(t *testing.T) {
 
 	// Create the user
 	ctx := context.Background()
-	_, err := memPlugin.CreateUser(ctx, "test", user)
+	_, err := memPlugin.CreateUser(ctx, user)
 	if err != nil {
 		t.Fatalf("Failed to create user: %v", err)
 	}
@@ -36,7 +36,7 @@ func TestAttributeSelection(t *testing.T) {
 		Attributes: []string{"userName"},
 	}
 
-	response, err := adapter.GetUsers(ctx, "test", params)
+	response, err := adapter.GetUsers(ctx, params)
 	if err != nil {
 		t.Fatalf("Failed to get users: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestAttributeSelection(t *testing.T) {
 		Attributes: []string{"userName", "name"},
 	}
 
-	response2, err := adapter.GetUsers(ctx, "test", params2)
+	response2, err := adapter.GetUsers(ctx, params2)
 	if err != nil {
 		t.Fatalf("Failed to get users: %v", err)
 	}
@@ -104,7 +104,7 @@ func TestAttributeSelection(t *testing.T) {
 	// Test 3: Get user without attributes (should return all)
 	params3 := scim.QueryParams{}
 
-	response3, err := adapter.GetUsers(ctx, "test", params3)
+	response3, err := adapter.GetUsers(ctx, params3)
 	if err != nil {
 		t.Fatalf("Failed to get users: %v", err)
 	}
@@ -140,13 +140,13 @@ func TestGetUserWithAttributes(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	created, err := memPlugin.CreateUser(ctx, "test", user)
+	created, err := memPlugin.CreateUser(ctx, user)
 	if err != nil {
 		t.Fatalf("Failed to create user: %v", err)
 	}
 
 	// Get user with specific attributes
-	result, err := adapter.GetUser(ctx, "test", created.ID, []string{"userName"})
+	result, err := adapter.GetUser(ctx, created.ID, []string{"userName"})
 	if err != nil {
 		t.Fatalf("Failed to get user: %v", err)
 	}

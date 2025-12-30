@@ -18,9 +18,9 @@ func NewAdapter(plugin Plugin) *Adapter {
 
 // GetUsers implements scim.PluginGetter
 // The adapter applies SCIM protocol operations (filtering, pagination, attribute selection)
-func (a *Adapter) GetUsers(ctx context.Context, baseEntity string, params scim.QueryParams) (*scim.ListResponse[*scim.User], error) {
+func (a *Adapter) GetUsers(ctx context.Context, params scim.QueryParams) (*scim.ListResponse[*scim.User], error) {
 	// Get raw data from plugin
-	users, err := a.plugin.GetUsers(ctx, baseEntity, params)
+	users, err := a.plugin.GetUsers(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -30,30 +30,30 @@ func (a *Adapter) GetUsers(ctx context.Context, baseEntity string, params scim.Q
 }
 
 // CreateUser implements scim.PluginGetter
-func (a *Adapter) CreateUser(ctx context.Context, baseEntity string, user *scim.User) (*scim.User, error) {
-	return a.plugin.CreateUser(ctx, baseEntity, user)
+func (a *Adapter) CreateUser(ctx context.Context, user *scim.User) (*scim.User, error) {
+	return a.plugin.CreateUser(ctx, user)
 }
 
 // GetUser implements scim.PluginGetter
-func (a *Adapter) GetUser(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.User, error) {
-	return a.plugin.GetUser(ctx, baseEntity, id, attributes)
+func (a *Adapter) GetUser(ctx context.Context, id string, attributes []string) (*scim.User, error) {
+	return a.plugin.GetUser(ctx, id, attributes)
 }
 
 // ModifyUser implements scim.PluginGetter
-func (a *Adapter) ModifyUser(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error {
-	return a.plugin.ModifyUser(ctx, baseEntity, id, patch)
+func (a *Adapter) ModifyUser(ctx context.Context, id string, patch *scim.PatchOp) error {
+	return a.plugin.ModifyUser(ctx, id, patch)
 }
 
 // DeleteUser implements scim.PluginGetter
-func (a *Adapter) DeleteUser(ctx context.Context, baseEntity string, id string) error {
-	return a.plugin.DeleteUser(ctx, baseEntity, id)
+func (a *Adapter) DeleteUser(ctx context.Context, id string) error {
+	return a.plugin.DeleteUser(ctx, id)
 }
 
 // GetGroups implements scim.PluginGetter
 // The adapter applies SCIM protocol operations (filtering, pagination, attribute selection)
-func (a *Adapter) GetGroups(ctx context.Context, baseEntity string, params scim.QueryParams) (*scim.ListResponse[*scim.Group], error) {
+func (a *Adapter) GetGroups(ctx context.Context, params scim.QueryParams) (*scim.ListResponse[*scim.Group], error) {
 	// Get raw data from plugin
-	groups, err := a.plugin.GetGroups(ctx, baseEntity, params)
+	groups, err := a.plugin.GetGroups(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -63,23 +63,23 @@ func (a *Adapter) GetGroups(ctx context.Context, baseEntity string, params scim.
 }
 
 // CreateGroup implements scim.PluginGetter
-func (a *Adapter) CreateGroup(ctx context.Context, baseEntity string, group *scim.Group) (*scim.Group, error) {
-	return a.plugin.CreateGroup(ctx, baseEntity, group)
+func (a *Adapter) CreateGroup(ctx context.Context, group *scim.Group) (*scim.Group, error) {
+	return a.plugin.CreateGroup(ctx, group)
 }
 
 // GetGroup implements scim.PluginGetter
-func (a *Adapter) GetGroup(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.Group, error) {
-	return a.plugin.GetGroup(ctx, baseEntity, id, attributes)
+func (a *Adapter) GetGroup(ctx context.Context, id string, attributes []string) (*scim.Group, error) {
+	return a.plugin.GetGroup(ctx, id, attributes)
 }
 
 // ModifyGroup implements scim.PluginGetter
-func (a *Adapter) ModifyGroup(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error {
-	return a.plugin.ModifyGroup(ctx, baseEntity, id, patch)
+func (a *Adapter) ModifyGroup(ctx context.Context, id string, patch *scim.PatchOp) error {
+	return a.plugin.ModifyGroup(ctx, id, patch)
 }
 
 // DeleteGroup implements scim.PluginGetter
-func (a *Adapter) DeleteGroup(ctx context.Context, baseEntity string, id string) error {
-	return a.plugin.DeleteGroup(ctx, baseEntity, id)
+func (a *Adapter) DeleteGroup(ctx context.Context, id string) error {
+	return a.plugin.DeleteGroup(ctx, id)
 }
 
 // AdaptedManager wraps Manager to provide adapted plugins

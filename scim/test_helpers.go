@@ -22,7 +22,7 @@ func newMockPlugin() *mockPlugin {
 	}
 }
 
-func (m *mockPlugin) GetUsers(ctx context.Context, baseEntity string, params QueryParams) (*ListResponse[*User], error) {
+func (m *mockPlugin) GetUsers(ctx context.Context, params QueryParams) (*ListResponse[*User], error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -47,7 +47,7 @@ func (m *mockPlugin) GetUsers(ctx context.Context, baseEntity string, params Que
 	}, nil
 }
 
-func (m *mockPlugin) CreateUser(ctx context.Context, baseEntity string, user *User) (*User, error) {
+func (m *mockPlugin) CreateUser(ctx context.Context, user *User) (*User, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -62,7 +62,7 @@ func (m *mockPlugin) CreateUser(ctx context.Context, baseEntity string, user *Us
 	return user, nil
 }
 
-func (m *mockPlugin) GetUser(ctx context.Context, baseEntity string, id string, attributes []string) (*User, error) {
+func (m *mockPlugin) GetUser(ctx context.Context, id string, attributes []string) (*User, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -73,7 +73,7 @@ func (m *mockPlugin) GetUser(ctx context.Context, baseEntity string, id string, 
 	return user, nil
 }
 
-func (m *mockPlugin) ModifyUser(ctx context.Context, baseEntity string, id string, patch *PatchOp) error {
+func (m *mockPlugin) ModifyUser(ctx context.Context, id string, patch *PatchOp) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -86,7 +86,7 @@ func (m *mockPlugin) ModifyUser(ctx context.Context, baseEntity string, id strin
 	return patcher.ApplyPatch(user, patch)
 }
 
-func (m *mockPlugin) DeleteUser(ctx context.Context, baseEntity string, id string) error {
+func (m *mockPlugin) DeleteUser(ctx context.Context, id string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -97,7 +97,7 @@ func (m *mockPlugin) DeleteUser(ctx context.Context, baseEntity string, id strin
 	return nil
 }
 
-func (m *mockPlugin) GetGroups(ctx context.Context, baseEntity string, params QueryParams) (*ListResponse[*Group], error) {
+func (m *mockPlugin) GetGroups(ctx context.Context, params QueryParams) (*ListResponse[*Group], error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -122,7 +122,7 @@ func (m *mockPlugin) GetGroups(ctx context.Context, baseEntity string, params Qu
 	}, nil
 }
 
-func (m *mockPlugin) CreateGroup(ctx context.Context, baseEntity string, group *Group) (*Group, error) {
+func (m *mockPlugin) CreateGroup(ctx context.Context, group *Group) (*Group, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -137,7 +137,7 @@ func (m *mockPlugin) CreateGroup(ctx context.Context, baseEntity string, group *
 	return group, nil
 }
 
-func (m *mockPlugin) GetGroup(ctx context.Context, baseEntity string, id string, attributes []string) (*Group, error) {
+func (m *mockPlugin) GetGroup(ctx context.Context, id string, attributes []string) (*Group, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -148,7 +148,7 @@ func (m *mockPlugin) GetGroup(ctx context.Context, baseEntity string, id string,
 	return group, nil
 }
 
-func (m *mockPlugin) ModifyGroup(ctx context.Context, baseEntity string, id string, patch *PatchOp) error {
+func (m *mockPlugin) ModifyGroup(ctx context.Context, id string, patch *PatchOp) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -161,7 +161,7 @@ func (m *mockPlugin) ModifyGroup(ctx context.Context, baseEntity string, id stri
 	return patcher.ApplyPatch(group, patch)
 }
 
-func (m *mockPlugin) DeleteGroup(ctx context.Context, baseEntity string, id string) error {
+func (m *mockPlugin) DeleteGroup(ctx context.Context, id string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

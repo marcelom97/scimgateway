@@ -186,7 +186,7 @@ func (p *SQLitePlugin) Close() error {
 }
 
 // GetUsers retrieves all users
-func (p *SQLitePlugin) GetUsers(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.User, error) {
+func (p *SQLitePlugin) GetUsers(ctx context.Context, params scim.QueryParams) ([]*scim.User, error) {
 	var rows []userRow
 	query := `SELECT id, username, data, created_at, updated_at FROM users`
 
@@ -205,7 +205,7 @@ func (p *SQLitePlugin) GetUsers(ctx context.Context, baseEntity string, params s
 }
 
 // CreateUser creates a new user
-func (p *SQLitePlugin) CreateUser(ctx context.Context, baseEntity string, user *scim.User) (*scim.User, error) {
+func (p *SQLitePlugin) CreateUser(ctx context.Context, user *scim.User) (*scim.User, error) {
 	// Generate ID if not provided
 	if user.ID == "" {
 		user.ID = uuid.New().String()
@@ -257,7 +257,7 @@ func (p *SQLitePlugin) CreateUser(ctx context.Context, baseEntity string, user *
 }
 
 // GetUser retrieves a specific user by ID
-func (p *SQLitePlugin) GetUser(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.User, error) {
+func (p *SQLitePlugin) GetUser(ctx context.Context, id string, attributes []string) (*scim.User, error) {
 	var row userRow
 	query := `SELECT id, username, data, created_at, updated_at FROM users WHERE id = ?`
 
@@ -272,9 +272,9 @@ func (p *SQLitePlugin) GetUser(ctx context.Context, baseEntity string, id string
 }
 
 // ModifyUser updates a user's attributes
-func (p *SQLitePlugin) ModifyUser(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error {
+func (p *SQLitePlugin) ModifyUser(ctx context.Context, id string, patch *scim.PatchOp) error {
 	// Get existing user (returns ErrNotFound if not exists)
-	user, err := p.GetUser(ctx, baseEntity, id, nil)
+	user, err := p.GetUser(ctx, id, nil)
 	if err != nil {
 		return err
 	}
@@ -308,7 +308,7 @@ func (p *SQLitePlugin) ModifyUser(ctx context.Context, baseEntity string, id str
 }
 
 // DeleteUser deletes a user
-func (p *SQLitePlugin) DeleteUser(ctx context.Context, baseEntity string, id string) error {
+func (p *SQLitePlugin) DeleteUser(ctx context.Context, id string) error {
 	result, err := p.db.ExecContext(ctx, "DELETE FROM users WHERE id = ?", id)
 	if err != nil {
 		return scim.ErrInternalServer(fmt.Sprintf("failed to delete user: %v", err))
@@ -327,7 +327,7 @@ func (p *SQLitePlugin) DeleteUser(ctx context.Context, baseEntity string, id str
 }
 
 // GetGroups retrieves all groups
-func (p *SQLitePlugin) GetGroups(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.Group, error) {
+func (p *SQLitePlugin) GetGroups(ctx context.Context, params scim.QueryParams) ([]*scim.Group, error) {
 	var rows []groupRow
 	query := `SELECT id, display_name, data, created_at, updated_at FROM groups`
 
@@ -346,7 +346,7 @@ func (p *SQLitePlugin) GetGroups(ctx context.Context, baseEntity string, params 
 }
 
 // CreateGroup creates a new group
-func (p *SQLitePlugin) CreateGroup(ctx context.Context, baseEntity string, group *scim.Group) (*scim.Group, error) {
+func (p *SQLitePlugin) CreateGroup(ctx context.Context, group *scim.Group) (*scim.Group, error) {
 	// Generate ID if not provided
 	if group.ID == "" {
 		group.ID = uuid.New().String()
@@ -398,7 +398,7 @@ func (p *SQLitePlugin) CreateGroup(ctx context.Context, baseEntity string, group
 }
 
 // GetGroup retrieves a specific group by ID
-func (p *SQLitePlugin) GetGroup(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.Group, error) {
+func (p *SQLitePlugin) GetGroup(ctx context.Context, id string, attributes []string) (*scim.Group, error) {
 	var row groupRow
 	query := `SELECT id, display_name, data, created_at, updated_at FROM groups WHERE id = ?`
 
@@ -413,9 +413,9 @@ func (p *SQLitePlugin) GetGroup(ctx context.Context, baseEntity string, id strin
 }
 
 // ModifyGroup updates a group's attributes
-func (p *SQLitePlugin) ModifyGroup(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error {
+func (p *SQLitePlugin) ModifyGroup(ctx context.Context, id string, patch *scim.PatchOp) error {
 	// Get existing group (returns ErrNotFound if not exists)
-	group, err := p.GetGroup(ctx, baseEntity, id, nil)
+	group, err := p.GetGroup(ctx, id, nil)
 	if err != nil {
 		return err
 	}
@@ -449,7 +449,7 @@ func (p *SQLitePlugin) ModifyGroup(ctx context.Context, baseEntity string, id st
 }
 
 // DeleteGroup deletes a group
-func (p *SQLitePlugin) DeleteGroup(ctx context.Context, baseEntity string, id string) error {
+func (p *SQLitePlugin) DeleteGroup(ctx context.Context, id string) error {
 	result, err := p.db.ExecContext(ctx, "DELETE FROM groups WHERE id = ?", id)
 	if err != nil {
 		return scim.ErrInternalServer(fmt.Sprintf("failed to delete group: %v", err))

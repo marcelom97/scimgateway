@@ -17,43 +17,43 @@ type mockPlugin struct {
 
 func (p *mockPlugin) Name() string { return p.name }
 
-func (p *mockPlugin) GetUsers(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.User, error) {
+func (p *mockPlugin) GetUsers(ctx context.Context, params scim.QueryParams) ([]*scim.User, error) {
 	return []*scim.User{}, nil
 }
 
-func (p *mockPlugin) CreateUser(ctx context.Context, baseEntity string, user *scim.User) (*scim.User, error) {
+func (p *mockPlugin) CreateUser(ctx context.Context, user *scim.User) (*scim.User, error) {
 	return user, nil
 }
 
-func (p *mockPlugin) GetUser(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.User, error) {
+func (p *mockPlugin) GetUser(ctx context.Context, id string, attributes []string) (*scim.User, error) {
 	return &scim.User{ID: id, UserName: "test"}, nil
 }
 
-func (p *mockPlugin) ModifyUser(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error {
+func (p *mockPlugin) ModifyUser(ctx context.Context, id string, patch *scim.PatchOp) error {
 	return nil
 }
 
-func (p *mockPlugin) DeleteUser(ctx context.Context, baseEntity string, id string) error {
+func (p *mockPlugin) DeleteUser(ctx context.Context, id string) error {
 	return nil
 }
 
-func (p *mockPlugin) GetGroups(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.Group, error) {
+func (p *mockPlugin) GetGroups(ctx context.Context, params scim.QueryParams) ([]*scim.Group, error) {
 	return []*scim.Group{}, nil
 }
 
-func (p *mockPlugin) CreateGroup(ctx context.Context, baseEntity string, group *scim.Group) (*scim.Group, error) {
+func (p *mockPlugin) CreateGroup(ctx context.Context, group *scim.Group) (*scim.Group, error) {
 	return group, nil
 }
 
-func (p *mockPlugin) GetGroup(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.Group, error) {
+func (p *mockPlugin) GetGroup(ctx context.Context, id string, attributes []string) (*scim.Group, error) {
 	return &scim.Group{ID: id, DisplayName: "test"}, nil
 }
 
-func (p *mockPlugin) ModifyGroup(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error {
+func (p *mockPlugin) ModifyGroup(ctx context.Context, id string, patch *scim.PatchOp) error {
 	return nil
 }
 
-func (p *mockPlugin) DeleteGroup(ctx context.Context, baseEntity string, id string) error {
+func (p *mockPlugin) DeleteGroup(ctx context.Context, id string) error {
 	return nil
 }
 

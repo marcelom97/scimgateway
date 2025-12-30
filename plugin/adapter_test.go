@@ -17,49 +17,49 @@ type contextAwarePlugin struct {
 
 func (p *contextAwarePlugin) Name() string { return p.name }
 
-func (p *contextAwarePlugin) GetUsers(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.User, error) {
+func (p *contextAwarePlugin) GetUsers(ctx context.Context, params scim.QueryParams) ([]*scim.User, error) {
 	return []*scim.User{
 		{ID: uuid.New().String(), UserName: "test"},
 	}, nil
 }
 
-func (p *contextAwarePlugin) CreateUser(ctx context.Context, baseEntity string, user *scim.User) (*scim.User, error) {
+func (p *contextAwarePlugin) CreateUser(ctx context.Context, user *scim.User) (*scim.User, error) {
 	user.ID = uuid.New().String()
 	return user, nil
 }
 
-func (p *contextAwarePlugin) GetUser(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.User, error) {
+func (p *contextAwarePlugin) GetUser(ctx context.Context, id string, attributes []string) (*scim.User, error) {
 	return &scim.User{ID: id, UserName: "test-user"}, nil
 }
 
-func (p *contextAwarePlugin) ModifyUser(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error {
+func (p *contextAwarePlugin) ModifyUser(ctx context.Context, id string, patch *scim.PatchOp) error {
 	return nil
 }
 
-func (p *contextAwarePlugin) DeleteUser(ctx context.Context, baseEntity string, id string) error {
+func (p *contextAwarePlugin) DeleteUser(ctx context.Context, id string) error {
 	return nil
 }
 
-func (p *contextAwarePlugin) GetGroups(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.Group, error) {
+func (p *contextAwarePlugin) GetGroups(ctx context.Context, params scim.QueryParams) ([]*scim.Group, error) {
 	return []*scim.Group{
 		{ID: uuid.New().String(), DisplayName: "test-group"},
 	}, nil
 }
 
-func (p *contextAwarePlugin) CreateGroup(ctx context.Context, baseEntity string, group *scim.Group) (*scim.Group, error) {
+func (p *contextAwarePlugin) CreateGroup(ctx context.Context, group *scim.Group) (*scim.Group, error) {
 	group.ID = uuid.New().String()
 	return group, nil
 }
 
-func (p *contextAwarePlugin) GetGroup(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.Group, error) {
+func (p *contextAwarePlugin) GetGroup(ctx context.Context, id string, attributes []string) (*scim.Group, error) {
 	return &scim.Group{ID: id, DisplayName: "test-group"}, nil
 }
 
-func (p *contextAwarePlugin) ModifyGroup(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error {
+func (p *contextAwarePlugin) ModifyGroup(ctx context.Context, id string, patch *scim.PatchOp) error {
 	return nil
 }
 
-func (p *contextAwarePlugin) DeleteGroup(ctx context.Context, baseEntity string, id string) error {
+func (p *contextAwarePlugin) DeleteGroup(ctx context.Context, id string) error {
 	return nil
 }
 
@@ -80,7 +80,7 @@ func TestAdapterGetUsers(t *testing.T) {
 	p := &contextAwarePlugin{name: "test"}
 	adapter := NewAdapter(p)
 
-	response, err := adapter.GetUsers(testCtx, "entity", scim.QueryParams{})
+	response, err := adapter.GetUsers(testCtx, scim.QueryParams{})
 	if err != nil {
 		t.Fatalf("GetUsers() error = %v", err)
 	}
@@ -95,7 +95,7 @@ func TestAdapterCreateUser(t *testing.T) {
 	adapter := NewAdapter(p)
 
 	user := &scim.User{UserName: "newuser"}
-	created, err := adapter.CreateUser(testCtx, "entity", user)
+	created, err := adapter.CreateUser(testCtx, user)
 	if err != nil {
 		t.Fatalf("CreateUser() error = %v", err)
 	}
@@ -110,7 +110,7 @@ func TestAdapterGetUser(t *testing.T) {
 	adapter := NewAdapter(p)
 
 	testID := uuid.New().String()
-	user, err := adapter.GetUser(testCtx, "entity", testID, nil)
+	user, err := adapter.GetUser(testCtx, testID, nil)
 	if err != nil {
 		t.Fatalf("GetUser() error = %v", err)
 	}
@@ -136,7 +136,7 @@ func TestAdapterModifyUser(t *testing.T) {
 	}
 
 	testID := uuid.New().String()
-	err := adapter.ModifyUser(testCtx, "entity", testID, patch)
+	err := adapter.ModifyUser(testCtx, testID, patch)
 	if err != nil {
 		t.Fatalf("ModifyUser() error = %v", err)
 	}
@@ -147,7 +147,7 @@ func TestAdapterDeleteUser(t *testing.T) {
 	adapter := NewAdapter(p)
 
 	testID := uuid.New().String()
-	err := adapter.DeleteUser(testCtx, "entity", testID)
+	err := adapter.DeleteUser(testCtx, testID)
 	if err != nil {
 		t.Fatalf("DeleteUser() error = %v", err)
 	}
@@ -157,7 +157,7 @@ func TestAdapterGetGroups(t *testing.T) {
 	p := &contextAwarePlugin{name: "test"}
 	adapter := NewAdapter(p)
 
-	response, err := adapter.GetGroups(testCtx, "entity", scim.QueryParams{})
+	response, err := adapter.GetGroups(testCtx, scim.QueryParams{})
 	if err != nil {
 		t.Fatalf("GetGroups() error = %v", err)
 	}
@@ -172,7 +172,7 @@ func TestAdapterCreateGroup(t *testing.T) {
 	adapter := NewAdapter(p)
 
 	group := &scim.Group{DisplayName: "newgroup"}
-	created, err := adapter.CreateGroup(testCtx, "entity", group)
+	created, err := adapter.CreateGroup(testCtx, group)
 	if err != nil {
 		t.Fatalf("CreateGroup() error = %v", err)
 	}
@@ -187,7 +187,7 @@ func TestAdapterGetGroup(t *testing.T) {
 	adapter := NewAdapter(p)
 
 	testID := uuid.New().String()
-	group, err := adapter.GetGroup(testCtx, "entity", testID, nil)
+	group, err := adapter.GetGroup(testCtx, testID, nil)
 	if err != nil {
 		t.Fatalf("GetGroup() error = %v", err)
 	}
@@ -213,7 +213,7 @@ func TestAdapterModifyGroup(t *testing.T) {
 	}
 
 	testID := uuid.New().String()
-	err := adapter.ModifyGroup(testCtx, "entity", testID, patch)
+	err := adapter.ModifyGroup(testCtx, testID, patch)
 	if err != nil {
 		t.Fatalf("ModifyGroup() error = %v", err)
 	}
@@ -224,7 +224,7 @@ func TestAdapterDeleteGroup(t *testing.T) {
 	adapter := NewAdapter(p)
 
 	testID := uuid.New().String()
-	err := adapter.DeleteGroup(testCtx, "entity", testID)
+	err := adapter.DeleteGroup(testCtx, testID)
 	if err != nil {
 		t.Fatalf("DeleteGroup() error = %v", err)
 	}
@@ -264,7 +264,7 @@ func TestAdaptedManagerGet(t *testing.T) {
 
 	// Test that adapter works
 	testID := uuid.New().String()
-	user, err := adapter.GetUser(testCtx, "entity", testID, nil)
+	user, err := adapter.GetUser(testCtx, testID, nil)
 	if err != nil {
 		t.Fatalf("Adapter GetUser() error = %v", err)
 	}

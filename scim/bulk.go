@@ -141,39 +141,37 @@ func (s *Server) processBulkOperation(ctx context.Context, plugin PluginGetter, 
 		resourceID = parts[1]
 	}
 
-	baseEntity := pluginName
-
 	switch strings.ToUpper(op.Method) {
 	case "POST":
 		switch resourceType {
 		case "Users":
-			resp = s.bulkCreateUser(ctx, plugin, baseEntity, op, pluginName, bulkIDMap)
+			resp = s.bulkCreateUser(ctx, plugin, op, pluginName, bulkIDMap)
 		case "Groups":
-			resp = s.bulkCreateGroup(ctx, plugin, baseEntity, op, pluginName, bulkIDMap)
+			resp = s.bulkCreateGroup(ctx, plugin, op, pluginName, bulkIDMap)
 		}
 
 	case "PUT":
 		switch resourceType {
 		case "Users":
-			resp = s.bulkUpdateUser(ctx, plugin, baseEntity, resourceID, op)
+			resp = s.bulkUpdateUser(ctx, plugin, resourceID, op)
 		case "Groups":
-			resp = s.bulkUpdateGroup(ctx, plugin, baseEntity, resourceID, op)
+			resp = s.bulkUpdateGroup(ctx, plugin, resourceID, op)
 		}
 
 	case "PATCH":
 		switch resourceType {
 		case "Users":
-			resp = s.bulkPatchUser(ctx, plugin, baseEntity, resourceID, op)
+			resp = s.bulkPatchUser(ctx, plugin, resourceID, op)
 		case "Groups":
-			resp = s.bulkPatchGroup(ctx, plugin, baseEntity, resourceID, op)
+			resp = s.bulkPatchGroup(ctx, plugin, resourceID, op)
 		}
 
 	case "DELETE":
 		switch resourceType {
 		case "Users":
-			resp = s.bulkDeleteUser(ctx, plugin, baseEntity, resourceID, op)
+			resp = s.bulkDeleteUser(ctx, plugin, resourceID, op)
 		case "Groups":
-			resp = s.bulkDeleteGroup(ctx, plugin, baseEntity, resourceID, op)
+			resp = s.bulkDeleteGroup(ctx, plugin, resourceID, op)
 		}
 
 	default:
@@ -188,7 +186,7 @@ func (s *Server) processBulkOperation(ctx context.Context, plugin PluginGetter, 
 
 // Bulk operation helpers
 
-func (s *Server) bulkCreateUser(ctx context.Context, plugin PluginGetter, baseEntity string, op BulkOperation, pluginName string, bulkIDMap map[string]string) BulkOperationResponse {
+func (s *Server) bulkCreateUser(ctx context.Context, plugin PluginGetter, op BulkOperation, pluginName string, bulkIDMap map[string]string) BulkOperationResponse {
 	resp := BulkOperationResponse{Method: op.Method, BulkID: op.BulkID}
 
 	data, _ := json.Marshal(op.Data)
@@ -199,7 +197,7 @@ func (s *Server) bulkCreateUser(ctx context.Context, plugin PluginGetter, baseEn
 		return resp
 	}
 
-	created, err := plugin.CreateUser(ctx, baseEntity, &user)
+	created, err := plugin.CreateUser(ctx, &user)
 	if err != nil {
 		resp.Status = "400"
 		resp.Response = map[string]any{"detail": err.Error()}
@@ -217,7 +215,7 @@ func (s *Server) bulkCreateUser(ctx context.Context, plugin PluginGetter, baseEn
 	return resp
 }
 
-func (s *Server) bulkCreateGroup(ctx context.Context, plugin PluginGetter, baseEntity string, op BulkOperation, pluginName string, bulkIDMap map[string]string) BulkOperationResponse {
+func (s *Server) bulkCreateGroup(ctx context.Context, plugin PluginGetter, op BulkOperation, pluginName string, bulkIDMap map[string]string) BulkOperationResponse {
 	resp := BulkOperationResponse{Method: op.Method, BulkID: op.BulkID}
 
 	data, _ := json.Marshal(op.Data)
@@ -228,7 +226,7 @@ func (s *Server) bulkCreateGroup(ctx context.Context, plugin PluginGetter, baseE
 		return resp
 	}
 
-	created, err := plugin.CreateGroup(ctx, baseEntity, &group)
+	created, err := plugin.CreateGroup(ctx, &group)
 	if err != nil {
 		resp.Status = "400"
 		resp.Response = map[string]any{"detail": err.Error()}
@@ -245,7 +243,7 @@ func (s *Server) bulkCreateGroup(ctx context.Context, plugin PluginGetter, baseE
 	return resp
 }
 
-func (s *Server) bulkUpdateUser(ctx context.Context, plugin PluginGetter, baseEntity, id string, op BulkOperation) BulkOperationResponse {
+func (s *Server) bulkUpdateUser(ctx context.Context, plugin PluginGetter, id string, op BulkOperation) BulkOperationResponse {
 	resp := BulkOperationResponse{Method: op.Method, BulkID: op.BulkID}
 
 	data, _ := json.Marshal(op.Data)
@@ -261,7 +259,7 @@ func (s *Server) bulkUpdateUser(ctx context.Context, plugin PluginGetter, baseEn
 		Operations: []PatchOperation{{Op: "replace", Value: user}},
 	}
 
-	if err := plugin.ModifyUser(ctx, baseEntity, id, patch); err != nil {
+	if err := plugin.ModifyUser(ctx, id, patch); err != nil {
 		resp.Status = "400"
 		resp.Response = map[string]any{"detail": err.Error()}
 		return resp
@@ -271,7 +269,7 @@ func (s *Server) bulkUpdateUser(ctx context.Context, plugin PluginGetter, baseEn
 	return resp
 }
 
-func (s *Server) bulkUpdateGroup(ctx context.Context, plugin PluginGetter, baseEntity, id string, op BulkOperation) BulkOperationResponse {
+func (s *Server) bulkUpdateGroup(ctx context.Context, plugin PluginGetter, id string, op BulkOperation) BulkOperationResponse {
 	resp := BulkOperationResponse{Method: op.Method, BulkID: op.BulkID}
 
 	data, _ := json.Marshal(op.Data)
@@ -287,7 +285,7 @@ func (s *Server) bulkUpdateGroup(ctx context.Context, plugin PluginGetter, baseE
 		Operations: []PatchOperation{{Op: "replace", Value: group}},
 	}
 
-	if err := plugin.ModifyGroup(ctx, baseEntity, id, patch); err != nil {
+	if err := plugin.ModifyGroup(ctx, id, patch); err != nil {
 		resp.Status = "400"
 		resp.Response = map[string]any{"detail": err.Error()}
 		return resp
@@ -297,7 +295,7 @@ func (s *Server) bulkUpdateGroup(ctx context.Context, plugin PluginGetter, baseE
 	return resp
 }
 
-func (s *Server) bulkPatchUser(ctx context.Context, plugin PluginGetter, baseEntity, id string, op BulkOperation) BulkOperationResponse {
+func (s *Server) bulkPatchUser(ctx context.Context, plugin PluginGetter, id string, op BulkOperation) BulkOperationResponse {
 	resp := BulkOperationResponse{Method: op.Method, BulkID: op.BulkID}
 
 	data, _ := json.Marshal(op.Data)
@@ -308,7 +306,7 @@ func (s *Server) bulkPatchUser(ctx context.Context, plugin PluginGetter, baseEnt
 		return resp
 	}
 
-	if err := plugin.ModifyUser(ctx, baseEntity, id, &patch); err != nil {
+	if err := plugin.ModifyUser(ctx, id, &patch); err != nil {
 		resp.Status = "400"
 		resp.Response = map[string]any{"detail": err.Error()}
 		return resp
@@ -318,7 +316,7 @@ func (s *Server) bulkPatchUser(ctx context.Context, plugin PluginGetter, baseEnt
 	return resp
 }
 
-func (s *Server) bulkPatchGroup(ctx context.Context, plugin PluginGetter, baseEntity, id string, op BulkOperation) BulkOperationResponse {
+func (s *Server) bulkPatchGroup(ctx context.Context, plugin PluginGetter, id string, op BulkOperation) BulkOperationResponse {
 	resp := BulkOperationResponse{Method: op.Method, BulkID: op.BulkID}
 
 	data, _ := json.Marshal(op.Data)
@@ -329,7 +327,7 @@ func (s *Server) bulkPatchGroup(ctx context.Context, plugin PluginGetter, baseEn
 		return resp
 	}
 
-	if err := plugin.ModifyGroup(ctx, baseEntity, id, &patch); err != nil {
+	if err := plugin.ModifyGroup(ctx, id, &patch); err != nil {
 		resp.Status = "400"
 		resp.Response = map[string]any{"detail": err.Error()}
 		return resp
@@ -339,10 +337,10 @@ func (s *Server) bulkPatchGroup(ctx context.Context, plugin PluginGetter, baseEn
 	return resp
 }
 
-func (s *Server) bulkDeleteUser(ctx context.Context, plugin PluginGetter, baseEntity, id string, op BulkOperation) BulkOperationResponse {
+func (s *Server) bulkDeleteUser(ctx context.Context, plugin PluginGetter, id string, op BulkOperation) BulkOperationResponse {
 	resp := BulkOperationResponse{Method: op.Method, BulkID: op.BulkID}
 
-	if err := plugin.DeleteUser(ctx, baseEntity, id); err != nil {
+	if err := plugin.DeleteUser(ctx, id); err != nil {
 		resp.Status = "404"
 		resp.Response = map[string]any{"detail": err.Error()}
 		return resp
@@ -352,10 +350,10 @@ func (s *Server) bulkDeleteUser(ctx context.Context, plugin PluginGetter, baseEn
 	return resp
 }
 
-func (s *Server) bulkDeleteGroup(ctx context.Context, plugin PluginGetter, baseEntity, id string, op BulkOperation) BulkOperationResponse {
+func (s *Server) bulkDeleteGroup(ctx context.Context, plugin PluginGetter, id string, op BulkOperation) BulkOperationResponse {
 	resp := BulkOperationResponse{Method: op.Method, BulkID: op.BulkID}
 
-	if err := plugin.DeleteGroup(ctx, baseEntity, id); err != nil {
+	if err := plugin.DeleteGroup(ctx, id); err != nil {
 		resp.Status = "404"
 		resp.Response = map[string]any{"detail": err.Error()}
 		return resp

@@ -60,18 +60,18 @@ func (p *MyPlugin) Name() string {
 
 ```go
 // User operations
-func (p *MyPlugin) GetUsers(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.User, error)
-func (p *MyPlugin) CreateUser(ctx context.Context, baseEntity string, user *scim.User) (*scim.User, error)
-func (p *MyPlugin) GetUser(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.User, error)
-func (p *MyPlugin) ModifyUser(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error
-func (p *MyPlugin) DeleteUser(ctx context.Context, baseEntity string, id string) error
+func (p *MyPlugin) GetUsers(ctx context.Context, params scim.QueryParams) ([]*scim.User, error)
+func (p *MyPlugin) CreateUser(ctx context.Context, user *scim.User) (*scim.User, error)
+func (p *MyPlugin) GetUser(ctx context.Context, id string, attributes []string) (*scim.User, error)
+func (p *MyPlugin) ModifyUser(ctx context.Context, id string, patch *scim.PatchOp) error
+func (p *MyPlugin) DeleteUser(ctx context.Context, id string) error
 
 // Group operations
-func (p *MyPlugin) GetGroups(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.Group, error)
-func (p *MyPlugin) CreateGroup(ctx context.Context, baseEntity string, group *scim.Group) (*scim.Group, error)
-func (p *MyPlugin) GetGroup(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.Group, error)
-func (p *MyPlugin) ModifyGroup(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error
-func (p *MyPlugin) DeleteGroup(ctx context.Context, baseEntity string, id string) error
+func (p *MyPlugin) GetGroups(ctx context.Context, params scim.QueryParams) ([]*scim.Group, error)
+func (p *MyPlugin) CreateGroup(ctx context.Context, group *scim.Group) (*scim.Group, error)
+func (p *MyPlugin) GetGroup(ctx context.Context, id string, attributes []string) (*scim.Group, error)
+func (p *MyPlugin) ModifyGroup(ctx context.Context, id string, patch *scim.PatchOp) error
+func (p *MyPlugin) DeleteGroup(ctx context.Context, id string) error
 ```
 
 ### 3. Register and Use
@@ -114,42 +114,41 @@ type Plugin interface {
 
     // GetUsers retrieves all users. The adapter layer will apply filtering,
     // pagination, and attribute selection based on params.
-    GetUsers(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.User, error)
+    GetUsers(ctx context.Context, params scim.QueryParams) ([]*scim.User, error)
 
     // CreateUser creates a new user
-    CreateUser(ctx context.Context, baseEntity string, user *scim.User) (*scim.User, error)
+    CreateUser(ctx context.Context, user *scim.User) (*scim.User, error)
 
     // GetUser retrieves a specific user by ID
-    GetUser(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.User, error)
+    GetUser(ctx context.Context, id string, attributes []string) (*scim.User, error)
 
     // ModifyUser updates a user's attributes using PATCH operations
-    ModifyUser(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error
+    ModifyUser(ctx context.Context, id string, patch *scim.PatchOp) error
 
     // DeleteUser deletes a user
-    DeleteUser(ctx context.Context, baseEntity string, id string) error
+    DeleteUser(ctx context.Context, id string) error
 
     // GetGroups retrieves all groups. The adapter layer will apply filtering,
     // pagination, and attribute selection based on params.
-    GetGroups(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.Group, error)
+    GetGroups(ctx context.Context, params scim.QueryParams) ([]*scim.Group, error)
 
     // CreateGroup creates a new group
-    CreateGroup(ctx context.Context, baseEntity string, group *scim.Group) (*scim.Group, error)
+    CreateGroup(ctx context.Context, group *scim.Group) (*scim.Group, error)
 
     // GetGroup retrieves a specific group by ID
-    GetGroup(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.Group, error)
+    GetGroup(ctx context.Context, id string, attributes []string) (*scim.Group, error)
 
     // ModifyGroup updates a group's attributes using PATCH operations
-    ModifyGroup(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error
+    ModifyGroup(ctx context.Context, id string, patch *scim.PatchOp) error
 
     // DeleteGroup deletes a group
-    DeleteGroup(ctx context.Context, baseEntity string, id string) error
+    DeleteGroup(ctx context.Context, id string) error
 }
 ```
 
 ### Method Parameters Explained
 
 - **`ctx context.Context`**: Request context for cancellation, timeouts, and tracing. **Always respect context cancellation**.
-- **`baseEntity string`**: Reserved for multi-tenancy. Can be ignored in single-tenant plugins.
 - **`params scim.QueryParams`**: Contains filter, sorting, pagination info. You can ignore this and return all data, or use it to optimize queries.
 - **`attributes []string`**: Requested attributes for optimization. Adapter handles selection, but you can use this for database query optimization.
 - **`patch *scim.PatchOp`**: PATCH operations to apply. Use `scim.NewPatchProcessor().ApplyPatch()` to apply patches.
@@ -161,7 +160,7 @@ type Plugin interface {
 **Best for**: Small datasets, simple backends, rapid development
 
 ```go
-func (p *MyPlugin) GetUsers(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.User, error) {
+func (p *MyPlugin) GetUsers(ctx context.Context, params scim.QueryParams) ([]*scim.User, error) {
     // Just return all users - adapter handles everything
     return p.fetchAllUsers(ctx)
 }
@@ -181,7 +180,7 @@ func (p *MyPlugin) GetUsers(ctx context.Context, baseEntity string, params scim.
 **Best for**: Large datasets, SQL/NoSQL backends, performance-critical applications
 
 ```go
-func (p *MyPlugin) GetUsers(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.User, error) {
+func (p *MyPlugin) GetUsers(ctx context.Context, params scim.QueryParams) ([]*scim.User, error) {
     // Convert SCIM filter to native query
     if params.Filter != "" {
         sqlWhere := convertFilterToSQL(params.Filter)
@@ -266,7 +265,7 @@ This design makes the library "good enough for the vast majority" of use cases.
 Always generate IDs if not provided:
 
 ```go
-func (p *MyPlugin) CreateUser(ctx context.Context, baseEntity string, user *scim.User) (*scim.User, error) {
+func (p *MyPlugin) CreateUser(ctx context.Context, user *scim.User) (*scim.User, error) {
     if user.ID == "" {
         user.ID = uuid.New().String()
     }
@@ -339,7 +338,7 @@ if invalidFilter {
 Always check context cancellation in long operations:
 
 ```go
-func (p *MyPlugin) GetUsers(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.User, error) {
+func (p *MyPlugin) GetUsers(ctx context.Context, params scim.QueryParams) ([]*scim.User, error) {
     // Check cancellation before expensive operations
     select {
     case <-ctx.Done():
@@ -364,7 +363,7 @@ type MyPlugin struct {
     mu    sync.RWMutex  // Use RWMutex for read-heavy workloads
 }
 
-func (p *MyPlugin) GetUser(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.User, error) {
+func (p *MyPlugin) GetUser(ctx context.Context, id string, attributes []string) (*scim.User, error) {
     p.mu.RLock()
     defer p.mu.RUnlock()
     
@@ -375,7 +374,7 @@ func (p *MyPlugin) GetUser(ctx context.Context, baseEntity string, id string, at
     return user, nil
 }
 
-func (p *MyPlugin) CreateUser(ctx context.Context, baseEntity string, user *scim.User) (*scim.User, error) {
+func (p *MyPlugin) CreateUser(ctx context.Context, user *scim.User) (*scim.User, error) {
     p.mu.Lock()
     defer p.mu.Unlock()
     
@@ -389,8 +388,8 @@ func (p *MyPlugin) CreateUser(ctx context.Context, baseEntity string, user *scim
 Use the built-in patch processor:
 
 ```go
-func (p *MyPlugin) ModifyUser(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error {
-    user, err := p.GetUser(ctx, baseEntity, id, nil)
+func (p *MyPlugin) ModifyUser(ctx context.Context, id string, patch *scim.PatchOp) error {
+    user, err := p.GetUser(ctx, id, nil)
     if err != nil {
         return err
     }
@@ -465,7 +464,7 @@ func (p *SimplePlugin) Name() string {
 }
 
 // GetUsers - Simple approach: return all users
-func (p *SimplePlugin) GetUsers(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.User, error) {
+func (p *SimplePlugin) GetUsers(ctx context.Context, params scim.QueryParams) ([]*scim.User, error) {
     p.mu.RLock()
     defer p.mu.RUnlock()
 
@@ -477,7 +476,7 @@ func (p *SimplePlugin) GetUsers(ctx context.Context, baseEntity string, params s
 }
 
 // CreateUser with proper metadata
-func (p *SimplePlugin) CreateUser(ctx context.Context, baseEntity string, user *scim.User) (*scim.User, error) {
+func (p *SimplePlugin) CreateUser(ctx context.Context, user *scim.User) (*scim.User, error) {
     p.mu.Lock()
     defer p.mu.Unlock()
 
@@ -505,7 +504,7 @@ func (p *SimplePlugin) CreateUser(ctx context.Context, baseEntity string, user *
 }
 
 // GetUser with proper error handling
-func (p *SimplePlugin) GetUser(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.User, error) {
+func (p *SimplePlugin) GetUser(ctx context.Context, id string, attributes []string) (*scim.User, error) {
     p.mu.RLock()
     defer p.mu.RUnlock()
 
@@ -517,7 +516,7 @@ func (p *SimplePlugin) GetUser(ctx context.Context, baseEntity string, id string
 }
 
 // ModifyUser with PATCH support
-func (p *SimplePlugin) ModifyUser(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error {
+func (p *SimplePlugin) ModifyUser(ctx context.Context, id string, patch *scim.PatchOp) error {
     p.mu.Lock()
     defer p.mu.Unlock()
 
@@ -541,7 +540,7 @@ func (p *SimplePlugin) ModifyUser(ctx context.Context, baseEntity string, id str
 }
 
 // DeleteUser with proper error handling
-func (p *SimplePlugin) DeleteUser(ctx context.Context, baseEntity string, id string) error {
+func (p *SimplePlugin) DeleteUser(ctx context.Context, id string) error {
     p.mu.Lock()
     defer p.mu.Unlock()
 
@@ -554,24 +553,24 @@ func (p *SimplePlugin) DeleteUser(ctx context.Context, baseEntity string, id str
 }
 
 // Implement Group methods similarly...
-func (p *SimplePlugin) GetGroups(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.Group, error) {
+func (p *SimplePlugin) GetGroups(ctx context.Context, params scim.QueryParams) ([]*scim.Group, error) {
     // Similar to GetUsers
     return nil, scim.ErrNotImplemented("GetGroups")
 }
 
-func (p *SimplePlugin) CreateGroup(ctx context.Context, baseEntity string, group *scim.Group) (*scim.Group, error) {
+func (p *SimplePlugin) CreateGroup(ctx context.Context, group *scim.Group) (*scim.Group, error) {
     return nil, scim.ErrNotImplemented("CreateGroup")
 }
 
-func (p *SimplePlugin) GetGroup(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.Group, error) {
+func (p *SimplePlugin) GetGroup(ctx context.Context, id string, attributes []string) (*scim.Group, error) {
     return nil, scim.ErrNotImplemented("GetGroup")
 }
 
-func (p *SimplePlugin) ModifyGroup(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error {
+func (p *SimplePlugin) ModifyGroup(ctx context.Context, id string, patch *scim.PatchOp) error {
     return scim.ErrNotImplemented("ModifyGroup")
 }
 
-func (p *SimplePlugin) DeleteGroup(ctx context.Context, baseEntity string, id string) error {
+func (p *SimplePlugin) DeleteGroup(ctx context.Context, id string) error {
     return scim.ErrNotImplemented("DeleteGroup")
 }
 ```
@@ -722,7 +721,7 @@ func New(name string, connString string) (*DBPlugin, error) {
 ### Pattern 3: Retry Logic
 
 ```go
-func (p *DBPlugin) CreateUser(ctx context.Context, baseEntity string, user *scim.User) (*scim.User, error) {
+func (p *DBPlugin) CreateUser(ctx context.Context, user *scim.User) (*scim.User, error) {
     var err error
     for i := 0; i < 3; i++ {
         err = p.tryCreateUser(ctx, user)

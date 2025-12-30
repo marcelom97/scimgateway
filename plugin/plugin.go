@@ -48,7 +48,6 @@ type Plugin interface {
 	//
 	// Parameters:
 	//   - ctx: Request context for cancellation and timeouts. Always respect ctx.Done().
-	//   - baseEntity: Reserved for multi-tenancy. Can be ignored in single-tenant plugins.
 	//   - params: Query parameters containing:
 	//       * Filter: SCIM filter expression (e.g., "userName eq \"john\"")
 	//       * StartIndex/Count: Pagination parameters (1-based index)
@@ -58,7 +57,7 @@ type Plugin interface {
 	// Returns:
 	//   - Slice of users matching the query (or all users if not optimizing)
 	//   - Error if backend operation fails
-	GetUsers(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.User, error)
+	GetUsers(ctx context.Context, params scim.QueryParams) ([]*scim.User, error)
 
 	// CreateUser creates a new user in the backend.
 	//
@@ -69,7 +68,7 @@ type Plugin interface {
 	//   - Return scim.ErrUniqueness() if userName already exists
 	//
 	// The created user is returned with all metadata populated.
-	CreateUser(ctx context.Context, baseEntity string, user *scim.User) (*scim.User, error)
+	CreateUser(ctx context.Context, user *scim.User) (*scim.User, error)
 
 	// GetUser retrieves a specific user by ID.
 	//
@@ -93,7 +92,7 @@ type Plugin interface {
 	// Returns:
 	//   - The requested user with all or selected attributes
 	//   - scim.ErrNotFound() if user doesn't exist
-	GetUser(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.User, error)
+	GetUser(ctx context.Context, id string, attributes []string) (*scim.User, error)
 
 	// ModifyUser applies PATCH operations to update a user's attributes.
 	//
@@ -107,32 +106,32 @@ type Plugin interface {
 	// The PatchProcessor handles all RFC 7644 PATCH semantics automatically.
 	//
 	// Returns error if user not found or patch application fails.
-	ModifyUser(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error
+	ModifyUser(ctx context.Context, id string, patch *scim.PatchOp) error
 
 	// DeleteUser deletes a user from the backend.
 	//
 	// Returns scim.ErrNotFound() if the user doesn't exist.
-	DeleteUser(ctx context.Context, baseEntity string, id string) error
+	DeleteUser(ctx context.Context, id string) error
 
 	// GetGroups retrieves groups from the backend.
 	// See GetUsers documentation for details - same pattern applies.
-	GetGroups(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.Group, error)
+	GetGroups(ctx context.Context, params scim.QueryParams) ([]*scim.Group, error)
 
 	// CreateGroup creates a new group in the backend.
 	// See CreateUser documentation for details - same pattern applies.
-	CreateGroup(ctx context.Context, baseEntity string, group *scim.Group) (*scim.Group, error)
+	CreateGroup(ctx context.Context, group *scim.Group) (*scim.Group, error)
 
 	// GetGroup retrieves a specific group by ID.
 	// See GetUser documentation for details - same pattern applies.
-	GetGroup(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.Group, error)
+	GetGroup(ctx context.Context, id string, attributes []string) (*scim.Group, error)
 
 	// ModifyGroup applies PATCH operations to update a group's attributes.
 	// See ModifyUser documentation for details - same pattern applies.
-	ModifyGroup(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error
+	ModifyGroup(ctx context.Context, id string, patch *scim.PatchOp) error
 
 	// DeleteGroup deletes a group from the backend.
 	// See DeleteUser documentation for details - same pattern applies.
-	DeleteGroup(ctx context.Context, baseEntity string, id string) error
+	DeleteGroup(ctx context.Context, id string) error
 }
 
 // Manager manages multiple plugins and their authentication.

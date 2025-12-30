@@ -22,16 +22,16 @@ func discardLogger() *slog.Logger {
 // The 'attributes' parameter enables plugins to optimize queries (e.g., SQL column projection),
 // while 'excludedAttributes' is efficiently handled by the server layer after retrieval.
 type PluginGetter interface {
-	GetUsers(ctx context.Context, baseEntity string, params QueryParams) (*ListResponse[*User], error)
-	CreateUser(ctx context.Context, baseEntity string, user *User) (*User, error)
-	GetUser(ctx context.Context, baseEntity string, id string, attributes []string) (*User, error)
-	ModifyUser(ctx context.Context, baseEntity string, id string, patch *PatchOp) error
-	DeleteUser(ctx context.Context, baseEntity string, id string) error
-	GetGroups(ctx context.Context, baseEntity string, params QueryParams) (*ListResponse[*Group], error)
-	CreateGroup(ctx context.Context, baseEntity string, group *Group) (*Group, error)
-	GetGroup(ctx context.Context, baseEntity string, id string, attributes []string) (*Group, error)
-	ModifyGroup(ctx context.Context, baseEntity string, id string, patch *PatchOp) error
-	DeleteGroup(ctx context.Context, baseEntity string, id string) error
+	GetUsers(ctx context.Context, params QueryParams) (*ListResponse[*User], error)
+	CreateUser(ctx context.Context, user *User) (*User, error)
+	GetUser(ctx context.Context, id string, attributes []string) (*User, error)
+	ModifyUser(ctx context.Context, id string, patch *PatchOp) error
+	DeleteUser(ctx context.Context, id string) error
+	GetGroups(ctx context.Context, params QueryParams) (*ListResponse[*Group], error)
+	CreateGroup(ctx context.Context, group *Group) (*Group, error)
+	GetGroup(ctx context.Context, id string, attributes []string) (*Group, error)
+	ModifyGroup(ctx context.Context, id string, patch *PatchOp) error
+	DeleteGroup(ctx context.Context, id string) error
 }
 
 // PluginManager defines the interface for managing plugins
@@ -197,7 +197,7 @@ func (s *Server) handleSearchEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.handleSearch(w, r, plugin, pluginName)
+	s.handleSearch(w, r, plugin)
 }
 
 // handleBulkEndpoint handles POST /{plugin}/Bulk
@@ -378,7 +378,7 @@ func (s *Server) getUsers(w http.ResponseWriter, r *http.Request, plugin PluginG
 		return
 	}
 
-	response, err := plugin.GetUsers(r.Context(), pluginName, params)
+	response, err := plugin.GetUsers(r.Context(), params)
 	if err != nil {
 		if scimErr, ok := err.(*SCIMError); ok {
 			s.handler.WriteSCIMError(w, scimErr)
@@ -448,7 +448,7 @@ func (s *Server) createUser(w http.ResponseWriter, r *http.Request, plugin Plugi
 		user.Active = Bool(true)
 	}
 
-	created, err := plugin.CreateUser(r.Context(), pluginName, &user)
+	created, err := plugin.CreateUser(r.Context(), &user)
 	if err != nil {
 		s.handlePluginError(w, err, http.StatusInternalServerError, "internalError")
 		return
@@ -485,7 +485,7 @@ func (s *Server) getUser(w http.ResponseWriter, r *http.Request, plugin PluginGe
 		return
 	}
 
-	user, err := plugin.GetUser(r.Context(), pluginName, id, params.Attributes)
+	user, err := plugin.GetUser(r.Context(), id, params.Attributes)
 	if err != nil {
 		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
@@ -532,7 +532,7 @@ func (s *Server) getUser(w http.ResponseWriter, r *http.Request, plugin PluginGe
 // replaceUser handles PUT /plugin/Users/{id}
 func (s *Server) replaceUser(w http.ResponseWriter, r *http.Request, plugin PluginGetter, pluginName string, id string) {
 	// Get current resource to check ETag preconditions
-	currentUser, err := plugin.GetUser(r.Context(), pluginName, id, nil)
+	currentUser, err := plugin.GetUser(r.Context(), id, nil)
 	if err != nil {
 		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
@@ -569,12 +569,12 @@ func (s *Server) replaceUser(w http.ResponseWriter, r *http.Request, plugin Plug
 	user.ID = id
 
 	// Delete and recreate (simple replace strategy)
-	if err := plugin.DeleteUser(r.Context(), pluginName, id); err != nil {
+	if err := plugin.DeleteUser(r.Context(), id); err != nil {
 		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
-	created, err := plugin.CreateUser(r.Context(), pluginName, &user)
+	created, err := plugin.CreateUser(r.Context(), &user)
 	if err != nil {
 		s.handlePluginError(w, err, http.StatusInternalServerError, "internalError")
 		return
@@ -599,7 +599,7 @@ func (s *Server) replaceUser(w http.ResponseWriter, r *http.Request, plugin Plug
 // modifyUser handles PATCH /plugin/Users/{id}
 func (s *Server) modifyUser(w http.ResponseWriter, r *http.Request, plugin PluginGetter, pluginName string, id string) {
 	// Get current resource to check ETag preconditions
-	currentUser, err := plugin.GetUser(r.Context(), pluginName, id, nil)
+	currentUser, err := plugin.GetUser(r.Context(), id, nil)
 	if err != nil {
 		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
@@ -632,13 +632,13 @@ func (s *Server) modifyUser(w http.ResponseWriter, r *http.Request, plugin Plugi
 		return
 	}
 
-	if err := plugin.ModifyUser(r.Context(), pluginName, id, &patch); err != nil {
+	if err := plugin.ModifyUser(r.Context(), id, &patch); err != nil {
 		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
 	// Return updated user
-	user, err := plugin.GetUser(r.Context(), pluginName, id, nil)
+	user, err := plugin.GetUser(r.Context(), id, nil)
 	if err != nil {
 		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
@@ -663,7 +663,7 @@ func (s *Server) modifyUser(w http.ResponseWriter, r *http.Request, plugin Plugi
 // deleteUser handles DELETE /plugin/Users/{id}
 func (s *Server) deleteUser(w http.ResponseWriter, r *http.Request, plugin PluginGetter, pluginName string, id string) {
 	// Get current resource to check ETag preconditions
-	currentUser, err := plugin.GetUser(r.Context(), pluginName, id, nil)
+	currentUser, err := plugin.GetUser(r.Context(), id, nil)
 	if err != nil {
 		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
@@ -683,7 +683,7 @@ func (s *Server) deleteUser(w http.ResponseWriter, r *http.Request, plugin Plugi
 		return
 	}
 
-	if err := plugin.DeleteUser(r.Context(), pluginName, id); err != nil {
+	if err := plugin.DeleteUser(r.Context(), id); err != nil {
 		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
@@ -699,7 +699,7 @@ func (s *Server) getGroups(w http.ResponseWriter, r *http.Request, plugin Plugin
 		return
 	}
 
-	response, err := plugin.GetGroups(r.Context(), pluginName, params)
+	response, err := plugin.GetGroups(r.Context(), params)
 	if err != nil {
 		if scimErr, ok := err.(*SCIMError); ok {
 			s.handler.WriteSCIMError(w, scimErr)
@@ -754,7 +754,7 @@ func (s *Server) createGroup(w http.ResponseWriter, r *http.Request, plugin Plug
 		return
 	}
 
-	created, err := plugin.CreateGroup(r.Context(), pluginName, &group)
+	created, err := plugin.CreateGroup(r.Context(), &group)
 	if err != nil {
 		s.handlePluginError(w, err, http.StatusInternalServerError, "internalError")
 		return
@@ -791,7 +791,7 @@ func (s *Server) getGroup(w http.ResponseWriter, r *http.Request, plugin PluginG
 		return
 	}
 
-	group, err := plugin.GetGroup(r.Context(), pluginName, id, params.Attributes)
+	group, err := plugin.GetGroup(r.Context(), id, params.Attributes)
 	if err != nil {
 		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
@@ -838,7 +838,7 @@ func (s *Server) getGroup(w http.ResponseWriter, r *http.Request, plugin PluginG
 // replaceGroup handles PUT /plugin/Groups/{id}
 func (s *Server) replaceGroup(w http.ResponseWriter, r *http.Request, plugin PluginGetter, pluginName string, id string) {
 	// Get current resource to check ETag preconditions
-	currentGroup, err := plugin.GetGroup(r.Context(), pluginName, id, nil)
+	currentGroup, err := plugin.GetGroup(r.Context(), id, nil)
 	if err != nil {
 		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
@@ -875,12 +875,12 @@ func (s *Server) replaceGroup(w http.ResponseWriter, r *http.Request, plugin Plu
 	group.ID = id
 
 	// Delete and recreate (simple replace strategy)
-	if err := plugin.DeleteGroup(r.Context(), pluginName, id); err != nil {
+	if err := plugin.DeleteGroup(r.Context(), id); err != nil {
 		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
-	created, err := plugin.CreateGroup(r.Context(), pluginName, &group)
+	created, err := plugin.CreateGroup(r.Context(), &group)
 	if err != nil {
 		s.handlePluginError(w, err, http.StatusInternalServerError, "internalError")
 		return
@@ -905,7 +905,7 @@ func (s *Server) replaceGroup(w http.ResponseWriter, r *http.Request, plugin Plu
 // modifyGroup handles PATCH /plugin/Groups/{id}
 func (s *Server) modifyGroup(w http.ResponseWriter, r *http.Request, plugin PluginGetter, pluginName string, id string) {
 	// Get current resource to check ETag preconditions
-	currentGroup, err := plugin.GetGroup(r.Context(), pluginName, id, nil)
+	currentGroup, err := plugin.GetGroup(r.Context(), id, nil)
 	if err != nil {
 		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
@@ -938,13 +938,13 @@ func (s *Server) modifyGroup(w http.ResponseWriter, r *http.Request, plugin Plug
 		return
 	}
 
-	if err := plugin.ModifyGroup(r.Context(), pluginName, id, &patch); err != nil {
+	if err := plugin.ModifyGroup(r.Context(), id, &patch); err != nil {
 		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}
 
 	// Return updated group
-	group, err := plugin.GetGroup(r.Context(), pluginName, id, nil)
+	group, err := plugin.GetGroup(r.Context(), id, nil)
 	if err != nil {
 		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
@@ -969,7 +969,7 @@ func (s *Server) modifyGroup(w http.ResponseWriter, r *http.Request, plugin Plug
 // deleteGroup handles DELETE /plugin/Groups/{id}
 func (s *Server) deleteGroup(w http.ResponseWriter, r *http.Request, plugin PluginGetter, pluginName string, id string) {
 	// Get current resource to check ETag preconditions
-	currentGroup, err := plugin.GetGroup(r.Context(), pluginName, id, nil)
+	currentGroup, err := plugin.GetGroup(r.Context(), id, nil)
 	if err != nil {
 		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
@@ -989,7 +989,7 @@ func (s *Server) deleteGroup(w http.ResponseWriter, r *http.Request, plugin Plug
 		return
 	}
 
-	if err := plugin.DeleteGroup(r.Context(), pluginName, id); err != nil {
+	if err := plugin.DeleteGroup(r.Context(), id); err != nil {
 		s.handlePluginError(w, err, http.StatusNotFound, "")
 		return
 	}

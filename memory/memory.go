@@ -34,7 +34,7 @@ func (p *Plugin) Name() string {
 
 // GetUsers retrieves all users
 // Note: The adapter layer handles filtering, pagination, and attribute selection
-func (p *Plugin) GetUsers(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.User, error) {
+func (p *Plugin) GetUsers(ctx context.Context, params scim.QueryParams) ([]*scim.User, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
@@ -48,7 +48,7 @@ func (p *Plugin) GetUsers(ctx context.Context, baseEntity string, params scim.Qu
 }
 
 // CreateUser creates a new user
-func (p *Plugin) CreateUser(ctx context.Context, baseEntity string, user *scim.User) (*scim.User, error) {
+func (p *Plugin) CreateUser(ctx context.Context, user *scim.User) (*scim.User, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -78,7 +78,7 @@ func (p *Plugin) CreateUser(ctx context.Context, baseEntity string, user *scim.U
 }
 
 // GetUser retrieves a specific user by ID
-func (p *Plugin) GetUser(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.User, error) {
+func (p *Plugin) GetUser(ctx context.Context, id string, attributes []string) (*scim.User, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
@@ -94,7 +94,7 @@ func (p *Plugin) GetUser(ctx context.Context, baseEntity string, id string, attr
 }
 
 // ModifyUser updates a user's attributes
-func (p *Plugin) ModifyUser(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error {
+func (p *Plugin) ModifyUser(ctx context.Context, id string, patch *scim.PatchOp) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -119,7 +119,7 @@ func (p *Plugin) ModifyUser(ctx context.Context, baseEntity string, id string, p
 }
 
 // DeleteUser deletes a user
-func (p *Plugin) DeleteUser(ctx context.Context, baseEntity string, id string) error {
+func (p *Plugin) DeleteUser(ctx context.Context, id string) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -133,7 +133,7 @@ func (p *Plugin) DeleteUser(ctx context.Context, baseEntity string, id string) e
 
 // GetGroups retrieves all groups
 // Note: The adapter layer handles filtering, pagination, and attribute selection
-func (p *Plugin) GetGroups(ctx context.Context, baseEntity string, params scim.QueryParams) ([]*scim.Group, error) {
+func (p *Plugin) GetGroups(ctx context.Context, params scim.QueryParams) ([]*scim.Group, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
@@ -147,7 +147,7 @@ func (p *Plugin) GetGroups(ctx context.Context, baseEntity string, params scim.Q
 }
 
 // CreateGroup creates a new group
-func (p *Plugin) CreateGroup(ctx context.Context, baseEntity string, group *scim.Group) (*scim.Group, error) {
+func (p *Plugin) CreateGroup(ctx context.Context, group *scim.Group) (*scim.Group, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -177,7 +177,7 @@ func (p *Plugin) CreateGroup(ctx context.Context, baseEntity string, group *scim
 }
 
 // GetGroup retrieves a specific group by ID
-func (p *Plugin) GetGroup(ctx context.Context, baseEntity string, id string, attributes []string) (*scim.Group, error) {
+func (p *Plugin) GetGroup(ctx context.Context, id string, attributes []string) (*scim.Group, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
@@ -193,7 +193,7 @@ func (p *Plugin) GetGroup(ctx context.Context, baseEntity string, id string, att
 }
 
 // ModifyGroup updates a group's attributes
-func (p *Plugin) ModifyGroup(ctx context.Context, baseEntity string, id string, patch *scim.PatchOp) error {
+func (p *Plugin) ModifyGroup(ctx context.Context, id string, patch *scim.PatchOp) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -218,7 +218,7 @@ func (p *Plugin) ModifyGroup(ctx context.Context, baseEntity string, id string, 
 }
 
 // DeleteGroup deletes a group
-func (p *Plugin) DeleteGroup(ctx context.Context, baseEntity string, id string) error {
+func (p *Plugin) DeleteGroup(ctx context.Context, id string) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 

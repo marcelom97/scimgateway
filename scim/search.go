@@ -24,7 +24,7 @@ type SearchRequest struct {
 }
 
 // handleSearch handles POST /.search
-func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request, plugin PluginGetter, baseEntity string) {
+func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request, plugin PluginGetter) {
 	if r.Method != http.MethodPost {
 		s.handler.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed", "invalidMethod")
 		return
@@ -73,7 +73,7 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request, plugin Plu
 	var allResources []any
 
 	// Get users
-	usersResp, err := plugin.GetUsers(r.Context(), baseEntity, params)
+	usersResp, err := plugin.GetUsers(r.Context(), params)
 	if err == nil {
 		for _, user := range usersResp.Resources {
 			allResources = append(allResources, user)
@@ -81,7 +81,7 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request, plugin Plu
 	}
 
 	// Get groups
-	groupsResp, err := plugin.GetGroups(r.Context(), baseEntity, params)
+	groupsResp, err := plugin.GetGroups(r.Context(), params)
 	if err == nil {
 		for _, group := range groupsResp.Resources {
 			allResources = append(allResources, group)
