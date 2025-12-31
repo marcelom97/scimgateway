@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.0] - 2025-12-31
+
+### Breaking Changes
+* feat!: remove unused Type and BaseEntity fields from PluginConfig (@marcelom97)
+* feat!: remove unused baseEntity parameter from Plugin interface (@marcelom97)
+
+### Features
+* feat: add GoReleaser integration for automated releases (@marcelom97)
+* feat: add thread safety and comprehensive documentation to plugin package (@marcelom97)
+
+### Performance
+* perf(scim): optimize SortResources with value caching (@marcelom97)
+
+### Refactoring
+* refactor: rename root package to scimgateway for consistency with module path (@marcelom97)
+
+### Documentation
+* docs: add comprehensive PLUGIN_DEVELOPMENT.md guide (@marcelom97)
+
+### Tests
+* test: add integration tests for single resource attribute selection (@marcelom97)
+
+[v0.2.0]: https://github.com/marcelom97/scimgateway/compare/v0.1.0...v0.2.0
+
 ## [v0.1.0] - 2025-10-26
 
 ### Features
