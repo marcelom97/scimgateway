@@ -1,0 +1,105 @@
+# GoReleaser configuration for scimgateway
+# This is a Go library, so we skip builds and only generate releases with changelogs.
+
+# GoReleaser v2 configuration
+version: 2
+
+# Project configuration
+project_name: scimgateway
+
+# Build configuration - skip since this is a library
+builds:
+  - skip: true
+
+# Disable archives - no need for source code archives
+archives:
+  - id: skip
+    meta: true
+    name_template: "{{ .ProjectName }}-{{ .Version }}"
+
+# Changelog configuration
+changelog:
+  # Use GitHub API for changelog generation (provides author usernames)
+  use: github
+
+  # Sort commits alphabetically within groups
+  sort: asc
+
+  # Commit hash visibility
+  # -1: hide commit hash from changelog (cleaner output)
+  abbrev: -1
+
+  # Commit message format
+  # Available fields: SHA, Message, AuthorName, AuthorEmail, AuthorUsername
+  format: "{{ .Message }} (@{{ .AuthorUsername }})"
+
+  # Group commits by type for organized changelogs
+  groups:
+    # Breaking changes at the top (most important)
+    - title: Breaking Changes
+      regexp: '^.*?[a-z]+(\([[:word:]]+\))?!:.+$'
+      order: 0
+
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??:.+$'
+      order: 1
+
+    - title: Bug Fixes
+      regexp: '^.*?(fix|bug)(\([[:word:]]+\))??:.+$'
+      order: 2
+
+    - title: Performance
+      regexp: '^.*?perf(\([[:word:]]+\))??:.+$'
+      order: 3
+
+    - title: Refactoring
+      regexp: '^.*?refactor(\([[:word:]]+\))??:.+$'
+      order: 4
+
+    - title: Documentation
+      regexp: '^.*?docs(\([[:word:]]+\))??:.+$'
+      order: 5
+
+    - title: Tests
+      regexp: '^.*?test(\([[:word:]]+\))??:.+$'
+      order: 6
+
+    - title: Others
+      order: 999
+
+  # Filter commits
+  filters:
+    # Exclude commits matching these patterns
+    exclude:
+      - '^docs:' # Documentation-only changes
+      - '^test:' # Test-only changes (unless significant)
+      - 'merge conflict'
+      - '^Merge (pull request|branch)'
+      - '^WIP'
+      - '^wip'
+      - '^chore:'
+      - 'typo'
+
+# Release configuration
+release:
+  # Don't create draft releases
+  draft: false
+
+  # Prepend new releases to CHANGELOG.md
+  mode: prepend
+
+  # Header template for each release
+  header: |
+    ## What's Changed
+    
+  # Footer template
+  footer: |
+    **Full Changelog**: https://github.com/marcelom97/scimgateway/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+# Metadata
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
+
+# Announce - skip announcements
+announce:
+  skip: true

@@ -6,3 +6,5 @@ scim.db
 .notes
 TODO.md
 
+# GoReleaser
+dist/
