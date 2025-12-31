@@ -70,13 +70,13 @@ func TestSingleResourceAttributeSelection(t *testing.T) {
 		name           string
 		queryParams    string
 		expectedStatus int
-		validate       func(*testing.T, map[string]interface{})
+		validate       func(*testing.T, map[string]any)
 	}{
 		{
 			name:           "attributes - include only userName and id",
 			queryParams:    "?attributes=userName,id",
 			expectedStatus: http.StatusOK,
-			validate: func(t *testing.T, data map[string]interface{}) {
+			validate: func(t *testing.T, data map[string]any) {
 				if _, ok := data["userName"]; !ok {
 					t.Error("Expected userName to be present")
 				}
@@ -98,7 +98,7 @@ func TestSingleResourceAttributeSelection(t *testing.T) {
 			name:           "excludedAttributes - exclude name and emails",
 			queryParams:    "?excludedAttributes=name,emails",
 			expectedStatus: http.StatusOK,
-			validate: func(t *testing.T, data map[string]interface{}) {
+			validate: func(t *testing.T, data map[string]any) {
 				if _, ok := data["userName"]; !ok {
 					t.Error("Expected userName to be present")
 				}
@@ -120,8 +120,8 @@ func TestSingleResourceAttributeSelection(t *testing.T) {
 			name:           "excludedAttributes - nested path",
 			queryParams:    "?excludedAttributes=name.familyName,emails.value",
 			expectedStatus: http.StatusOK,
-			validate: func(t *testing.T, data map[string]interface{}) {
-				if name, ok := data["name"].(map[string]interface{}); ok {
+			validate: func(t *testing.T, data map[string]any) {
+				if name, ok := data["name"].(map[string]any); ok {
 					if _, ok := name["givenName"]; !ok {
 						t.Error("Expected name.givenName to be present")
 					}
@@ -137,11 +137,11 @@ func TestSingleResourceAttributeSelection(t *testing.T) {
 			name:           "attributes - nested path inclusion",
 			queryParams:    "?attributes=id,name.givenName",
 			expectedStatus: http.StatusOK,
-			validate: func(t *testing.T, data map[string]interface{}) {
+			validate: func(t *testing.T, data map[string]any) {
 				if _, ok := data["id"]; !ok {
 					t.Error("Expected id to be present")
 				}
-				if name, ok := data["name"].(map[string]interface{}); ok {
+				if name, ok := data["name"].(map[string]any); ok {
 					if _, ok := name["givenName"]; !ok {
 						t.Error("Expected name.givenName to be present")
 					}
@@ -159,7 +159,7 @@ func TestSingleResourceAttributeSelection(t *testing.T) {
 			name:           "mutually exclusive - should reject",
 			queryParams:    "?attributes=userName&excludedAttributes=emails",
 			expectedStatus: http.StatusBadRequest,
-			validate: func(t *testing.T, data map[string]interface{}) {
+			validate: func(t *testing.T, data map[string]any) {
 				// Should get error response
 				if status, ok := data["status"]; ok {
 					if status != "400" {
@@ -174,7 +174,7 @@ func TestSingleResourceAttributeSelection(t *testing.T) {
 			name:           "no query params - return full resource",
 			queryParams:    "",
 			expectedStatus: http.StatusOK,
-			validate: func(t *testing.T, data map[string]interface{}) {
+			validate: func(t *testing.T, data map[string]any) {
 				if _, ok := data["userName"]; !ok {
 					t.Error("Expected userName to be present")
 				}
@@ -206,7 +206,7 @@ func TestSingleResourceAttributeSelection(t *testing.T) {
 				return
 			}
 
-			var data map[string]interface{}
+			var data map[string]any
 			if err := json.NewDecoder(rec.Body).Decode(&data); err != nil {
 				t.Fatalf("Failed to decode response: %v", err)
 			}
@@ -267,13 +267,13 @@ func TestSingleResourceAttributeSelection_Groups(t *testing.T) {
 		name           string
 		queryParams    string
 		expectedStatus int
-		validate       func(*testing.T, map[string]interface{})
+		validate       func(*testing.T, map[string]any)
 	}{
 		{
 			name:           "attributes - include only displayName and id",
 			queryParams:    "?attributes=displayName,id",
 			expectedStatus: http.StatusOK,
-			validate: func(t *testing.T, data map[string]interface{}) {
+			validate: func(t *testing.T, data map[string]any) {
 				if _, ok := data["displayName"]; !ok {
 					t.Error("Expected displayName to be present")
 				}
@@ -289,7 +289,7 @@ func TestSingleResourceAttributeSelection_Groups(t *testing.T) {
 			name:           "excludedAttributes - exclude members",
 			queryParams:    "?excludedAttributes=members",
 			expectedStatus: http.StatusOK,
-			validate: func(t *testing.T, data map[string]interface{}) {
+			validate: func(t *testing.T, data map[string]any) {
 				if _, ok := data["displayName"]; !ok {
 					t.Error("Expected displayName to be present")
 				}
@@ -315,7 +315,7 @@ func TestSingleResourceAttributeSelection_Groups(t *testing.T) {
 				return
 			}
 
-			var data map[string]interface{}
+			var data map[string]any
 			if err := json.NewDecoder(rec.Body).Decode(&data); err != nil {
 				t.Fatalf("Failed to decode response: %v", err)
 			}

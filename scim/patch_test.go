@@ -1,6 +1,7 @@
 package scim
 
 import (
+	"maps"
 	"testing"
 )
 
@@ -456,9 +457,7 @@ func TestPatchProcessor_EnterpriseExtension(t *testing.T) {
 				EnterpriseUser: make(map[string]any),
 			}
 			// Copy map contents
-			for k, v := range user.EnterpriseUser {
-				testUser.EnterpriseUser[k] = v
-			}
+			maps.Copy(testUser.EnterpriseUser, user.EnterpriseUser)
 
 			processor := NewPatchProcessor()
 			err := processor.ApplyPatch(testUser, tt.patch)

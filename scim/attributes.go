@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"sort"
 	"strings"
+	"time"
 )
 
 // AttributeSelector handles attribute selection and exclusion
@@ -299,35 +300,49 @@ func (as *AttributeSelector) excludeFromMap(objMap map[string]any, exclusions ma
 	return filteredObj
 }
 
-// SortResources sorts resources based on sortBy and sortOrder
+// SortResources sorts resources based on sortBy and sortOrder.
+// Pre-extracts attribute values once per resource for optimal performance,
+// especially important for nested attributes that require JSON marshaling.
 func SortResources[T any](resources []T, sortBy, sortOrder string) []T {
 	if sortBy == "" || len(resources) == 0 {
 		return resources
 	}
 
-	// Create a copy to avoid modifying original
 	sorted := make([]T, len(resources))
 	copy(sorted, resources)
 
 	ascending := strings.ToLower(sortOrder) != "descending"
 
-	// Use efficient O(n log n) sort from standard library
-	sort.Slice(sorted, func(i, j int) bool {
-		val1 := getAttributeValue(sorted[i], sortBy)
-		val2 := getAttributeValue(sorted[j], sortBy)
-		cmp := compareForSort(val1, val2)
+	type resourceValue struct {
+		resource T
+		value    any
+	}
+	pairs := make([]resourceValue, len(sorted))
+	for i := range sorted {
+		pairs[i] = resourceValue{
+			resource: sorted[i],
+			value:    getAttributeValue(sorted[i], sortBy),
+		}
+	}
 
+	sort.Slice(pairs, func(i, j int) bool {
+		cmp := compareForSort(pairs[i].value, pairs[j].value)
 		if ascending {
 			return cmp < 0
 		}
 		return cmp > 0
 	})
 
+	for i := range pairs {
+		sorted[i] = pairs[i].resource
+	}
+
 	return sorted
 }
 
-// compareForSort compares two values for sorting
-// Returns: -1 if a < b, 0 if a == b, 1 if a > b
+// compareForSort compares two values for sorting.
+//
+// Returns -1 if a < b, 0 if a == b, 1 if a > b.
 func compareForSort(a, b any) int {
 	if a == nil && b == nil {
 		return 0
@@ -339,7 +354,6 @@ func compareForSort(a, b any) int {
 		return 1
 	}
 
-	// String comparison
 	aStr, aIsStr := a.(string)
 	bStr, bIsStr := b.(string)
 	if aIsStr && bIsStr {
@@ -352,7 +366,6 @@ func compareForSort(a, b any) int {
 		return 0
 	}
 
-	// Numeric comparison
 	aNum := toFloat64(a)
 	bNum := toFloat64(b)
 	if aNum != nil && bNum != nil {
@@ -365,7 +378,6 @@ func compareForSort(a, b any) int {
 		return 0
 	}
 
-	// Boolean comparison
 	aBool, aIsBool := a.(bool)
 	bBool, bIsBool := b.(bool)
 	if aIsBool && bIsBool {
@@ -378,7 +390,31 @@ func compareForSort(a, b any) int {
 		return 0
 	}
 
+	aTime := toTime(a)
+	bTime := toTime(b)
+	if aTime != nil && bTime != nil {
+		if aTime.Before(*bTime) {
+			return -1
+		}
+		if aTime.After(*bTime) {
+			return 1
+		}
+		return 0
+	}
+
 	return 0
+}
+
+// toTime converts a value to *time.Time if possible.
+func toTime(v any) *time.Time {
+	switch val := v.(type) {
+	case time.Time:
+		return &val
+	case *time.Time:
+		return val
+	default:
+		return nil
+	}
 }
 
 // ApplyPagination applies pagination to resources

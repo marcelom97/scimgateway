@@ -205,7 +205,7 @@ func TestManager_ConcurrentAccess(t *testing.T) {
 	errChan := make(chan error, 200)
 
 	// Concurrent reads via Get()
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		wg.Add(1)
 		go func(n int) {
 			defer wg.Done()
@@ -220,7 +220,7 @@ func TestManager_ConcurrentAccess(t *testing.T) {
 	}
 
 	// Concurrent reads via GetAuthenticator()
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		wg.Add(1)
 		go func(n int) {
 			defer wg.Done()
@@ -235,15 +235,13 @@ func TestManager_ConcurrentAccess(t *testing.T) {
 	}
 
 	// Concurrent List() operations
-	for i := 0; i < 50; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 50 {
+		wg.Go(func() {
 			list := manager.List()
 			if len(list) != 2 {
 				errChan <- fmt.Errorf("expected 2 plugins, got %d", len(list))
 			}
-		}()
+		})
 	}
 
 	wg.Wait()

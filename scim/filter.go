@@ -565,9 +565,9 @@ func compareEqual(a, b any) bool {
 	aVal = reflect.ValueOf(a)
 	bVal = reflect.ValueOf(b)
 	if (aVal.Kind() == reflect.Bool || bVal.Kind() == reflect.Bool) &&
-		aVal.Type().ConvertibleTo(reflect.TypeOf(true)) &&
-		bVal.Type().ConvertibleTo(reflect.TypeOf(true)) {
-		return aVal.Convert(reflect.TypeOf(true)).Bool() == bVal.Convert(reflect.TypeOf(true)).Bool()
+		aVal.Type().ConvertibleTo(reflect.TypeFor[bool]()) &&
+		bVal.Type().ConvertibleTo(reflect.TypeFor[bool]()) {
+		return aVal.Convert(reflect.TypeFor[bool]()).Bool() == bVal.Convert(reflect.TypeFor[bool]()).Bool()
 	}
 
 	// Handle comparison between boolean and string representation

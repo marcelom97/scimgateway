@@ -986,3 +986,199 @@ func TestFilterByFilter(t *testing.T) {
 		})
 	}
 }
+
+func generateBenchmarkUsers(n int) []*User {
+	users := make([]*User, n)
+	baseTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	for i := range n {
+		createdTime := baseTime.Add(time.Duration(i) * time.Hour)
+		users[i] = &User{
+			ID:          string(rune(i)),
+			UserName:    string(rune(n - i)),
+			DisplayName: string(rune(i)),
+			Active:      Bool(i%2 == 0),
+			Meta: &Meta{
+				ResourceType: "User",
+				Created:      &createdTime,
+				LastModified: &createdTime,
+			},
+			Schemas: []string{SchemaUser},
+		}
+	}
+	return users
+}
+
+func BenchmarkSortResources_SmallDataset(b *testing.B) {
+	users := generateBenchmarkUsers(10)
+	resources := make([]any, len(users))
+	for i, u := range users {
+		resources[i] = u
+	}
+
+	for b.Loop() {
+		_ = SortResources(resources, "userName", "ascending")
+	}
+}
+
+func BenchmarkSortResources_MediumDataset(b *testing.B) {
+	users := generateBenchmarkUsers(100)
+	resources := make([]any, len(users))
+	for i, u := range users {
+		resources[i] = u
+	}
+
+	for b.Loop() {
+		_ = SortResources(resources, "userName", "ascending")
+	}
+}
+
+func BenchmarkSortResources_LargeDataset(b *testing.B) {
+	users := generateBenchmarkUsers(1000)
+	resources := make([]any, len(users))
+	for i, u := range users {
+		resources[i] = u
+	}
+
+	for b.Loop() {
+		_ = SortResources(resources, "userName", "ascending")
+	}
+}
+
+func BenchmarkSortResources_NestedPath(b *testing.B) {
+	users := generateBenchmarkUsers(1000)
+	resources := make([]any, len(users))
+	for i, u := range users {
+		resources[i] = u
+	}
+
+	for b.Loop() {
+		_ = SortResources(resources, "meta.created", "ascending")
+	}
+}
+
+func BenchmarkSortResources_SimplePath(b *testing.B) {
+	users := generateBenchmarkUsers(1000)
+	resources := make([]any, len(users))
+	for i, u := range users {
+		resources[i] = u
+	}
+
+	for b.Loop() {
+		_ = SortResources(resources, "userName", "ascending")
+	}
+}
+
+// TestCompareForSort_TimeValues is a regression test ensuring time.Time comparison works correctly.
+func TestCompareForSort_TimeValues(t *testing.T) {
+	time1 := time.Date(2024, 1, 10, 10, 0, 0, 0, time.UTC)
+	time2 := time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)
+	time3 := time.Date(2024, 1, 20, 10, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name     string
+		a        any
+		b        any
+		expected int
+	}{
+		{
+			name:     "time.Time: earlier < later",
+			a:        time1,
+			b:        time3,
+			expected: -1,
+		},
+		{
+			name:     "time.Time: later > earlier",
+			a:        time3,
+			b:        time1,
+			expected: 1,
+		},
+		{
+			name:     "time.Time: equal times",
+			a:        time2,
+			b:        time2,
+			expected: 0,
+		},
+		{
+			name:     "*time.Time: earlier < later",
+			a:        &time1,
+			b:        &time3,
+			expected: -1,
+		},
+		{
+			name:     "*time.Time: later > earlier",
+			a:        &time3,
+			b:        &time1,
+			expected: 1,
+		},
+		{
+			name:     "*time.Time: equal times",
+			a:        &time2,
+			b:        &time2,
+			expected: 0,
+		},
+		{
+			name:     "mixed: time.Time vs *time.Time",
+			a:        time1,
+			b:        &time3,
+			expected: -1,
+		},
+		{
+			name:     "mixed: *time.Time vs time.Time",
+			a:        &time3,
+			b:        time1,
+			expected: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := compareForSort(tt.a, tt.b)
+			if result != tt.expected {
+				t.Errorf("compareForSort(%v, %v) = %d, expected %d",
+					tt.a, tt.b, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestSortResources_TemporalFieldsRegression ensures temporal sorting works correctly.
+func TestSortResources_TemporalFieldsRegression(t *testing.T) {
+	time1 := time.Date(2024, 1, 10, 10, 0, 0, 0, time.UTC)
+	time2 := time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)
+	time3 := time.Date(2024, 1, 20, 10, 0, 0, 0, time.UTC)
+
+	user1 := &User{ID: "user1", Meta: &Meta{Created: &time1}}
+	user2 := &User{ID: "user2", Meta: &Meta{Created: &time2}}
+	user3 := &User{ID: "user3", Meta: &Meta{Created: &time3}}
+
+	t.Run("ascending", func(t *testing.T) {
+		users := []any{user2, user3, user1}
+		sorted := SortResources(users, "meta.created", "ascending")
+
+		if sorted[0].(*User).ID != "user1" {
+			t.Errorf("First user should be user1 (earliest), got %s", sorted[0].(*User).ID)
+		}
+		if sorted[1].(*User).ID != "user2" {
+			t.Errorf("Second user should be user2 (middle), got %s", sorted[1].(*User).ID)
+		}
+		if sorted[2].(*User).ID != "user3" {
+			t.Errorf("Third user should be user3 (latest), got %s", sorted[2].(*User).ID)
+		}
+	})
+
+	t.Run("descending", func(t *testing.T) {
+		users := []any{user2, user1, user3}
+		sorted := SortResources(users, "meta.created", "descending")
+
+		if sorted[0].(*User).ID != "user3" {
+			t.Errorf("First user should be user3 (latest), got %s", sorted[0].(*User).ID)
+		}
+		if sorted[1].(*User).ID != "user2" {
+			t.Errorf("Second user should be user2 (middle), got %s", sorted[1].(*User).ID)
+		}
+		if sorted[2].(*User).ID != "user1" {
+			t.Errorf("Third user should be user1 (earliest), got %s", sorted[2].(*User).ID)
+		}
+	})
+}
