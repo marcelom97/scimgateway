@@ -43,7 +43,14 @@ jobs:
           
           # Get the release body from GitHub
           echo "Fetching release notes for ${TAG_NAME}..."
-          gh release view "${TAG_NAME}" --json body --jq '.body' > /tmp/release_notes.txt
+          gh release view "${TAG_NAME}" --json body --jq '.body' > /tmp/release_notes_raw.txt
+          
+          # Strip GoReleaser template headers and clean up the release notes
+          # Remove "## What's Changed" and "## Changelog" headers, keep only the actual content
+          sed -e '/^## What'\''s Changed$/d' \
+              -e '/^## Changelog$/d' \
+              -e '/^$/N;/^\n$/D' \
+              /tmp/release_notes_raw.txt > /tmp/release_notes.txt
           
           # Get the current date
           RELEASE_DATE=$(date +%Y-%m-%d)
@@ -55,7 +62,6 @@ jobs:
           echo "## [${TAG_NAME}] - ${RELEASE_DATE}" > /tmp/new_entry.md
           echo "" >> /tmp/new_entry.md
           cat /tmp/release_notes.txt >> /tmp/new_entry.md
-          echo "" >> /tmp/new_entry.md
           
           # Add comparison link
           if [ -n "${PREVIOUS_TAG}" ]; then

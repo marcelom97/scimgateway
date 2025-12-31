@@ -7,18 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.2.1] - 2025-12-31
 
-## What's Changed
-
-## Changelog
 ### Features
 * feat: automate CHANGELOG.md updates on release (@marcelom97)
 
-**Full Changelog**: https://github.com/marcelom97/scimgateway/compare/v0.2.0...v0.2.1
-
-
-
 [v0.2.1]: https://github.com/marcelom97/scimgateway/compare/v0.2.0...v0.2.1
-
 
 ## [v0.2.0] - 2025-12-31
 
