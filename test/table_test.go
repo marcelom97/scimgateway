@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	gateway "github.com/marcelom97/scimgateway"
+	"github.com/marcelom97/scimgateway"
 	"github.com/marcelom97/scimgateway/config"
-	"github.com/marcelom97/scimgateway/memory"
+	"github.com/marcelom97/scimgateway/internal/testutil"
 	"github.com/marcelom97/scimgateway/scim"
 )
 
@@ -575,8 +575,8 @@ func TestHTTPEndpoints_TableDriven(t *testing.T) {
 				},
 				Plugins: []config.PluginConfig{{Name: "test"}},
 			}
-			gw := gateway.New(cfg)
-			gw.RegisterPlugin(memory.New("test"))
+			gw := scimgateway.New(cfg)
+			gw.RegisterPlugin(testutil.NewMemoryPlugin("test"))
 			if err := gw.Initialize(); err != nil {
 				t.Fatalf("Failed to initialize gateway: %v", err)
 			}

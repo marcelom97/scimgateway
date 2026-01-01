@@ -7,9 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	gateway "github.com/marcelom97/scimgateway"
+	"github.com/marcelom97/scimgateway"
 	"github.com/marcelom97/scimgateway/config"
-	"github.com/marcelom97/scimgateway/memory"
+	"github.com/marcelom97/scimgateway/internal/testutil"
 	"github.com/marcelom97/scimgateway/scim"
 )
 
@@ -22,8 +22,8 @@ func TestETagIntegration(t *testing.T) {
 		},
 		Plugins: []config.PluginConfig{{Name: "test"}},
 	}
-	gw := gateway.New(cfg)
-	memPlugin := memory.New("memory")
+	gw := scimgateway.New(cfg)
+	memPlugin := testutil.NewMemoryPlugin("memory")
 	gw.RegisterPlugin(memPlugin)
 	if err := gw.Initialize(); err != nil {
 		t.Fatalf("Failed to initialize gateway: %v", err)

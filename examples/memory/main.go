@@ -7,7 +7,6 @@ import (
 
 	"github.com/marcelom97/scimgateway"
 	"github.com/marcelom97/scimgateway/config"
-	"github.com/marcelom97/scimgateway/memory"
 )
 
 func main() {
@@ -42,7 +41,7 @@ func main() {
 	gw.SetLogger(logger)
 	log.Printf("Structured logging enabled")
 
-	gw.RegisterPlugin(memory.New("memory"))
+	gw.RegisterPlugin(New("memory"))
 	log.Printf("Registered plugin: memory with basic auth")
 
 	// Initialize gateway

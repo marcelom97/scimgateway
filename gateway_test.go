@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/marcelom97/scimgateway/config"
-	"github.com/marcelom97/scimgateway/memory"
+	"github.com/marcelom97/scimgateway/internal/testutil"
 	"github.com/marcelom97/scimgateway/scim"
 )
 
@@ -855,7 +855,7 @@ func TestGateway_PerPluginAuth_SinglePlugin_BearerAuth(t *testing.T) {
 	}
 
 	gw := New(cfg)
-	plugin := memory.New("test")
+	plugin := testutil.NewMemoryPlugin("test")
 	gw.RegisterPlugin(plugin)
 
 	if err := gw.Initialize(); err != nil {
@@ -932,7 +932,7 @@ func TestGateway_PerPluginAuth_SinglePlugin_BasicAuth(t *testing.T) {
 	}
 
 	gw := New(cfg)
-	plugin := memory.New("test")
+	plugin := testutil.NewMemoryPlugin("test")
 	gw.RegisterPlugin(plugin)
 
 	if err := gw.Initialize(); err != nil {
@@ -1032,13 +1032,13 @@ func TestGateway_PerPluginAuth_MultiplePlugins_DifferentAuth(t *testing.T) {
 	gw := New(cfg)
 
 	// Register all plugins with their configs
-	plugin1 := memory.New("plugin1")
+	plugin1 := testutil.NewMemoryPlugin("plugin1")
 	gw.RegisterPlugin(plugin1)
 
-	plugin2 := memory.New("plugin2")
+	plugin2 := testutil.NewMemoryPlugin("plugin2")
 	gw.RegisterPlugin(plugin2)
 
-	plugin3 := memory.New("plugin3")
+	plugin3 := testutil.NewMemoryPlugin("plugin3")
 	gw.RegisterPlugin(plugin3)
 
 	if err := gw.Initialize(); err != nil {
@@ -1192,7 +1192,7 @@ func TestGateway_PerPluginAuth_DifferentEndpoints(t *testing.T) {
 	}
 
 	gw := New(cfg)
-	plugin := memory.New("protected")
+	plugin := testutil.NewMemoryPlugin("protected")
 	gw.RegisterPlugin(plugin)
 
 	if err := gw.Initialize(); err != nil {
@@ -1261,7 +1261,7 @@ func TestGateway_PerPluginAuth_ConfigBasedAuth(t *testing.T) {
 	gw := New(cfg)
 
 	// Register plugin - auth should come from config
-	plugin := memory.New("test")
+	plugin := testutil.NewMemoryPlugin("test")
 	gw.RegisterPlugin(plugin)
 
 	if err := gw.Initialize(); err != nil {

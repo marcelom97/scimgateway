@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	gateway "github.com/marcelom97/scimgateway"
+	"github.com/marcelom97/scimgateway"
 	"github.com/marcelom97/scimgateway/config"
-	"github.com/marcelom97/scimgateway/memory"
+	"github.com/marcelom97/scimgateway/internal/testutil"
 )
 
 // TestSCIMCompliance is a comprehensive test suite for SCIM 2.0 specification compliance
@@ -29,8 +29,8 @@ func TestSCIMCompliance(t *testing.T) {
 		Plugins: []config.PluginConfig{{Name: "test"}},
 	}
 
-	gw := gateway.New(cfg)
-	gw.RegisterPlugin(memory.New("test"))
+	gw := scimgateway.New(cfg)
+	gw.RegisterPlugin(testutil.NewMemoryPlugin("test"))
 
 	if err := gw.Initialize(); err != nil {
 		t.Fatalf("Failed to initialize gateway: %v", err)
