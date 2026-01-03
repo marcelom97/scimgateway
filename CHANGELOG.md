@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.3.0] - 2026-01-03
 
+
+## Changelog
+### Features
+* feat: add custom authentication support with JWT example (@marcelom97)
+### Refactoring
+* refactor: consolidate memory plugin and test infrastructure (@marcelom97)
+
+**Full Changelog**: https://github.com/marcelom97/scimgateway/compare/v0.2.3...v0.3.0
+
+[v0.3.0]: https://github.com/marcelom97/scimgateway/compare/v0.2.3...v0.3.0
+
+
+## [v0.3.0] - 2026-01-03
+
 ### Features
 * feat: add custom authentication support with JWT example (@marcelom97)
   - Add CustomAuth to config.AuthConfig for user-provided authenticators
