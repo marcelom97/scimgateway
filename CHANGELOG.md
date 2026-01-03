@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.3.0] - 2026-01-03
+
+### Features
+* feat: add custom authentication support with JWT example (@marcelom97)
+  - Add CustomAuth to config.AuthConfig for user-provided authenticators
+  - Implement custom auth handling in plugin.Manager
+  - Create examples/jwt-auth with RS256 JWT implementation (~450 lines)
+  - Simplify documentation to building-block focused approach
+
+### Improvements
+* refactor: consolidate memory plugin and test infrastructure (@marcelom97)
+
+This release enables users to implement any authentication method (JWT, OAuth2, SAML) by implementing the simple `auth.Authenticator` interface and passing it via config.
+
+**Full Changelog**: https://github.com/marcelom97/scimgateway/compare/v0.2.3...v0.3.0
+
+[v0.3.0]: https://github.com/marcelom97/scimgateway/compare/v0.2.3...v0.3.0
+
+
 ## [v0.2.3] - 2026-01-01
 
 
