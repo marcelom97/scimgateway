@@ -706,9 +706,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Documentation
 
-- [API Stability](API_STABILITY.md) - API stability guarantees and versioning policy
 - [Security](SECURITY.md) - Security considerations and vulnerability reporting
-- [Performance](PERFORMANCE.md) - Benchmark results and optimization guidance
 - [Plugin Development](PLUGIN_DEVELOPMENT.md) - Guide to building custom plugins
 - [Compliance](COMPLIANCE.md) - SCIM 2.0 RFC compliance status
 

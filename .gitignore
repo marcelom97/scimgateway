@@ -5,3 +5,9 @@ AGENTS.md
 .vscode
 .notes
 dist/
+
+# Test coverage files
+*.out
+coverage.out
+*_coverage*.out
+benchmark_results.txt
