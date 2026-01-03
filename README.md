@@ -1,5 +1,9 @@
 # SCIM Gateway
 
+[![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/marcelom97/scimgateway)](https://goreportcard.com/report/github.com/marcelom97/scimgateway)
+
 A production-ready SCIM 2.0 (System for Cross-domain Identity Management) gateway library for Go. This library provides a complete implementation of the SCIM protocol with a flexible plugin architecture that allows you to connect to any identity backend.
 
 > **Inspired by**: This Go implementation is inspired by the popular Node.js [scimgateway](https://github.com/jelhub/scimgateway) project by Jarle Elshaug. We've reimagined the architecture for Go, bringing type safety, excellent performance, and the simplicity of Go's concurrency model to SCIM gateway implementations.
@@ -681,8 +685,11 @@ func (p *MyPlugin) GetUsers(ctx context.Context, params scim.QueryParams) ([]*sc
 
 See the `examples/` directory for complete working examples:
 
-- `examples/in-memory/` - Minimal server with in-memory storage and basic auth
-- `examples/custom-plugin/` - How to implement a custom plugin
+- `examples/memory/` - In-memory storage reference implementation
+- `examples/postgres/` - PostgreSQL backend with query builder
+- `examples/sqlite/` - SQLite backend implementation
+- `examples/jwt-auth/` - Custom JWT authentication example
+- `examples/custom-plugin/` - Template for implementing custom plugins
 
 ## Contributing
 
@@ -696,6 +703,14 @@ Contributions are welcome! Please ensure:
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
+
+## Documentation
+
+- [API Stability](API_STABILITY.md) - API stability guarantees and versioning policy
+- [Security](SECURITY.md) - Security considerations and vulnerability reporting
+- [Performance](PERFORMANCE.md) - Benchmark results and optimization guidance
+- [Plugin Development](PLUGIN_DEVELOPMENT.md) - Guide to building custom plugins
+- [Compliance](COMPLIANCE.md) - SCIM 2.0 RFC compliance status
 
 ## Links
 
