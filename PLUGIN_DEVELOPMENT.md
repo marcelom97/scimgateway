@@ -737,13 +737,89 @@ func (p *DBPlugin) CreateUser(ctx context.Context, user *scim.User) (*scim.User,
 }
 ```
 
+## Custom Authentication Patterns
+
+Implement the `auth.Authenticator` interface:
+
+```go
+type Authenticator interface {
+    Authenticate(r *http.Request) error
+}
+```
+
+### Building Blocks
+
+**1. Implement authenticator:**
+
+```go
+type APIKeyAuthenticator struct {
+    validKeys map[string]string  // key -> user_id
+}
+
+func (a *APIKeyAuthenticator) Authenticate(r *http.Request) error {
+    apiKey := r.Header.Get("X-API-Key")
+    if apiKey == "" {
+        return fmt.Errorf("missing API key")
+    }
+    
+    userID, ok := a.validKeys[apiKey]
+    if !ok {
+        return fmt.Errorf("invalid API key")
+    }
+    
+    // Add data to context for plugins to access
+    ctx := context.WithValue(r.Context(), "user_id", userID)
+    *r = *r.WithContext(ctx)
+    
+    return nil
+}
+```
+
+**2. Pass via config:**
+
+```go
+myAuth := &APIKeyAuthenticator{validKeys: map[string]string{"key123": "user456"}}
+
+cfg := &config.Config{
+    Plugins: []config.PluginConfig{{
+        Name: "myplugin",
+        Auth: &config.AuthConfig{
+            Type: "custom",
+            Custom: &config.CustomAuth{Authenticator: myAuth},
+        },
+    }},
+}
+```
+
+**3. Access auth data in plugins:**
+
+```go
+func (p *MyPlugin) GetUser(ctx context.Context, id string, attrs []string) (*scim.User, error) {
+    userID, _ := ctx.Value("user_id").(string)
+    // Use for authorization, logging, etc.
+}
+```
+
+**Multiple auth methods:**
+
+```go
+multi := auth.NewMultiAuthenticator(
+    &APIKeyAuthenticator{...},
+    &JWTAuthenticator{...},
+)
+```
+
+**See:** `examples/jwt-auth/` for complete JWT implementation (~100 lines)
+
 ## Additional Resources
 
 - **Plugin Interface**: See `plugin/plugin.go` for the complete interface definition
 - **SCIM Types**: See `scim/types.go` for User, Group, and other SCIM types
 - **Error Types**: See `scim/errors.go` for SCIM error constructors
 - **Patch Operations**: See `scim/patch.go` for PATCH operation details
+- **Auth Interface**: See `auth/auth.go` for the Authenticator interface
 - **Examples**: See `examples/` directory for complete working examples
+  - `examples/jwt-auth/` - Custom JWT authentication implementation
 
 ## Support
 

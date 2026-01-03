@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+
+	"github.com/marcelom97/scimgateway/auth"
 )
 
 // ValidationError represents a configuration validation error
@@ -193,9 +195,10 @@ type PluginConfig struct {
 
 // AuthConfig represents authentication configuration with type-safe config
 type AuthConfig struct {
-	Type   string // basic, bearer, none
+	Type   string // basic, bearer, custom, none
 	Basic  *BasicAuth
 	Bearer *BearerAuth
+	Custom *CustomAuth
 }
 
 // Validate validates the authentication configuration
@@ -206,6 +209,7 @@ func (a *AuthConfig) Validate(fieldPrefix string) error {
 	validTypes := map[string]bool{
 		"basic":  true,
 		"bearer": true,
+		"custom": true,
 		"none":   true,
 		"":       true, // empty is treated as none
 	}
@@ -213,7 +217,7 @@ func (a *AuthConfig) Validate(fieldPrefix string) error {
 	if !validTypes[strings.ToLower(a.Type)] {
 		errors = append(errors, ValidationError{
 			Field:   fmt.Sprintf("%s.type", fieldPrefix),
-			Message: fmt.Sprintf("invalid auth type '%s': must be 'basic', 'bearer', or 'none'", a.Type),
+			Message: fmt.Sprintf("invalid auth type '%s': must be 'basic', 'bearer', 'custom', or 'none'", a.Type),
 		})
 	}
 
@@ -254,6 +258,13 @@ func (a *AuthConfig) Validate(fieldPrefix string) error {
 				})
 			}
 		}
+	case "custom":
+		if a.Custom == nil || a.Custom.Authenticator == nil {
+			errors = append(errors, ValidationError{
+				Field:   fmt.Sprintf("%s.custom", fieldPrefix),
+				Message: "custom auth configuration is required when type is 'custom'",
+			})
+		}
 	}
 
 	if len(errors) > 0 {
@@ -271,6 +282,11 @@ type BasicAuth struct {
 // BearerAuth represents bearer token authentication configuration
 type BearerAuth struct {
 	Token string
+}
+
+// CustomAuth represents custom authentication configuration
+type CustomAuth struct {
+	Authenticator auth.Authenticator
 }
 
 // DefaultConfig returns a default configuration

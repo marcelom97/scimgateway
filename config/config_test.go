@@ -1,6 +1,7 @@
 package config
 
 import (
+	"net/http"
 	"strings"
 	"testing"
 )
@@ -365,6 +366,48 @@ func TestAuthConfigValidate(t *testing.T) {
 			fieldPrefix: "gateway.auth",
 			wantErr:     false,
 		},
+		{
+			name: "valid custom auth",
+			config: AuthConfig{
+				Type: "custom",
+				Custom: &CustomAuth{
+					Authenticator: &mockAuthenticator{},
+				},
+			},
+			fieldPrefix: "gateway.auth",
+			wantErr:     false,
+		},
+		{
+			name: "custom auth without authenticator",
+			config: AuthConfig{
+				Type:   "custom",
+				Custom: nil,
+			},
+			fieldPrefix: "gateway.auth",
+			wantErr:     true,
+			errContains: "custom auth configuration is required",
+		},
+		{
+			name: "custom auth with nil authenticator",
+			config: AuthConfig{
+				Type: "custom",
+				Custom: &CustomAuth{
+					Authenticator: nil,
+				},
+			},
+			fieldPrefix: "gateway.auth",
+			wantErr:     true,
+			errContains: "custom auth configuration is required",
+		},
+		{
+			name: "invalid auth type",
+			config: AuthConfig{
+				Type: "oauth2",
+			},
+			fieldPrefix: "gateway.auth",
+			wantErr:     true,
+			errContains: "invalid auth type",
+		},
 	}
 
 	for _, tt := range tests {
@@ -390,4 +433,11 @@ func TestDefaultConfigIsValid(t *testing.T) {
 	if err := cfg.Validate(); err != nil {
 		t.Errorf("DefaultConfig() is not valid: %v", err)
 	}
+}
+
+// mockAuthenticator is a test double for auth.Authenticator
+type mockAuthenticator struct{}
+
+func (m *mockAuthenticator) Authenticate(r *http.Request) error {
+	return nil
 }

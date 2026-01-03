@@ -28,6 +28,7 @@ A production-ready SCIM 2.0 (System for Cross-domain Identity Management) gatewa
   - Each plugin can have its own authentication configuration
   - Basic authentication support
   - Bearer token authentication support
+  - Custom authenticators via simple interface
   - No authentication (public access) option
   - Constant-time credential comparison for security
 
@@ -277,6 +278,36 @@ Test with:
 ```bash
 curl -H "Authorization: Bearer my-secret-token" http://localhost:8080/memory/Users
 ```
+
+### Custom Authentication
+
+Implement the `auth.Authenticator` interface:
+
+```go
+type Authenticator interface {
+    Authenticate(r *http.Request) error
+}
+```
+
+Pass it via config:
+
+```go
+jwtAuth := &MyJWTAuthenticator{publicKey, audience, issuer}
+
+cfg := &config.Config{
+    Plugins: []config.PluginConfig{{
+        Name: "memory",
+        Auth: &config.AuthConfig{
+            Type: "custom",
+            Custom: &config.CustomAuth{Authenticator: jwtAuth},
+        },
+    }},
+}
+```
+
+**Example:** `examples/jwt-auth/` - JWT with RSA signatures (~100 lines)
+
+Only Basic and Bearer auth are built-in to keep the core minimal.
 
 ## Creating Custom Plugins
 

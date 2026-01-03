@@ -1,10 +1,7 @@
 CLAUDE.md
 AGENTS.md
 .claude
-TEST_SUMMARY.md
-scim.db
+.cursor
+.vscode
 .notes
-TODO.md
-
-# GoReleaser
 dist/

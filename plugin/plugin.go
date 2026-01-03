@@ -192,6 +192,10 @@ func createAuthenticator(authCfg *config.AuthConfig) auth.Authenticator {
 		if authCfg.Bearer != nil {
 			return auth.NewBearerAuthenticator(authCfg.Bearer.Token)
 		}
+	case "custom":
+		if authCfg.Custom != nil && authCfg.Custom.Authenticator != nil {
+			return authCfg.Custom.Authenticator
+		}
 	case "none", "":
 		return nil
 	}
