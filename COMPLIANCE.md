@@ -185,11 +185,11 @@ All errors return proper SCIM error responses:
 The library includes comprehensive tests covering all SCIM operations:
 
 ### Unit Tests
-- **Overall Coverage**: 75.8%
-- **Config Package**: 84.1% (configuration validation)
+- **Overall Coverage**: 76.8%
 - **Auth Package**: 90.4% (authentication)
-- **Plugin Package**: 93.5% (plugin interface)
-- **SCIM Package**: 53.4% (protocol implementation)
+- **Plugin Package**: 88.4% (plugin interface)
+- **Config Package**: 74.4% (configuration validation)
+- **SCIM Package**: 71.0% (protocol implementation)
 
 ### Integration Tests
 - Complete SCIM compliance test suite
