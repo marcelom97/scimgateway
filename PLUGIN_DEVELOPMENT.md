@@ -813,19 +813,34 @@ multi := auth.NewMultiAuthenticator(
 
 ## Additional Resources
 
+### Documentation
+
+- **[API_STABILITY.md](API_STABILITY.md)** - API stability guarantees and versioning policy
+- **[SECURITY.md](SECURITY.md)** - Security guidelines for plugin developers
+- **[PERFORMANCE.md](PERFORMANCE.md)** - Performance characteristics and optimization guidance
+- **[COMPLIANCE.md](COMPLIANCE.md)** - SCIM 2.0 RFC compliance status
+
+### Source Reference
+
 - **Plugin Interface**: See `plugin/plugin.go` for the complete interface definition
 - **SCIM Types**: See `scim/types.go` for User, Group, and other SCIM types
 - **Error Types**: See `scim/errors.go` for SCIM error constructors
 - **Patch Operations**: See `scim/patch.go` for PATCH operation details
 - **Auth Interface**: See `auth/auth.go` for the Authenticator interface
-- **Examples**: See `examples/` directory for complete working examples
-  - `examples/jwt-auth/` - Custom JWT authentication implementation
+
+### Examples
+
+- `examples/memory/` - In-memory reference implementation
+- `examples/postgres/` - PostgreSQL database backend
+- `examples/sqlite/` - SQLite database backend
+- `examples/jwt-auth/` - Custom JWT authentication
+- `examples/custom-plugin/` - Minimal plugin template
 
 ## Support
 
 If you have questions or need help:
 - Check existing examples in `examples/` directory
-- Review the in-memory plugin (`memory/memory.go`) as reference
+- Review the memory plugin (`examples/memory/`) as reference
 - Open an issue on GitHub with your question
 
 ## Contributing
