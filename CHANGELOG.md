@@ -5,33 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.0] - Unreleased
+
+**First stable release with API stability guarantee!**
+
+### Highlights
+- API stability commitment for v1.x releases (see [API_STABILITY.md](API_STABILITY.md))
+- Comprehensive security and performance documentation
+- 76.8% test coverage with benchmarks
+
+### Documentation
+- **NEW**: [API_STABILITY.md](API_STABILITY.md) - API stability guarantees and deprecation policy
+- **NEW**: [SECURITY.md](SECURITY.md) - Security best practices and vulnerability reporting
+- **NEW**: [PERFORMANCE.md](PERFORMANCE.md) - Benchmarks and optimization guidance
+- **UPDATED**: README.md - Added badges and documentation links
+- **UPDATED**: PLUGIN_DEVELOPMENT.md - Added links to new documentation
+- **UPDATED**: COMPLIANCE.md - Updated test coverage numbers
+
+### Testing & Quality
+- Comprehensive server handler tests (24 new test cases)
+- Performance benchmarks for all core operations
+- Security code review completed
+- SCIM package coverage: 54.9% → 71.0%
+
+### API Stability
+Starting with v1.0.0, we commit to semantic versioning:
+- **PATCH** releases: Bug fixes only, fully backward compatible
+- **MINOR** releases: New features, backward compatible
+- **MAJOR** releases: Breaking changes (with migration guide)
+
+See [API_STABILITY.md](API_STABILITY.md) for details.
+
+**Full Changelog**: https://github.com/marcelom97/scimgateway/compare/v0.3.0...v1.0.0
+
+[v1.0.0]: https://github.com/marcelom97/scimgateway/compare/v0.3.0...v1.0.0
+
 ## [v0.3.0] - 2026-01-03
 
-
-## Changelog
 ### Features
-* feat: add custom authentication support with JWT example (@marcelom97)
-### Refactoring
-* refactor: consolidate memory plugin and test infrastructure (@marcelom97)
-
-**Full Changelog**: https://github.com/marcelom97/scimgateway/compare/v0.2.3...v0.3.0
-
-[v0.3.0]: https://github.com/marcelom97/scimgateway/compare/v0.2.3...v0.3.0
-
-
-## [v0.3.0] - 2026-01-03
-
-### Features
-* feat: add custom authentication support with JWT example (@marcelom97)
-  - Add CustomAuth to config.AuthConfig for user-provided authenticators
-  - Implement custom auth handling in plugin.Manager
-  - Create examples/jwt-auth with RS256 JWT implementation (~450 lines)
-  - Simplify documentation to building-block focused approach
+- Custom authentication support via `config.CustomAuth`
+- JWT example with RS256 validation (`examples/jwt-auth/`)
 
 ### Improvements
-* refactor: consolidate memory plugin and test infrastructure (@marcelom97)
-
-This release enables users to implement any authentication method (JWT, OAuth2, SAML) by implementing the simple `auth.Authenticator` interface and passing it via config.
+- Consolidate memory plugin and test infrastructure
+- Building-block focused documentation
 
 **Full Changelog**: https://github.com/marcelom97/scimgateway/compare/v0.2.3...v0.3.0
 
