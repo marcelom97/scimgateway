@@ -24,7 +24,7 @@ A production-ready SCIM 2.0 (System for Cross-domain Identity Management) gatewa
 
 - **Flexible Plugin Architecture**
   - Simple plugin interface for connecting any backend
-  - Included in-memory plugin for testing
+  - Plugins implement typed SCIM resources (*scim.User, *scim.Group)
   - Plugins can be simple (return all data) or optimized (process filters natively)
   - Multiple plugins can be registered simultaneously
 
@@ -46,14 +46,14 @@ A production-ready SCIM 2.0 (System for Cross-domain Identity Management) gatewa
 - **Production Ready**
   - Thread-safe operations
   - Comprehensive error handling with no panics
-  - Excellent test coverage (75%+)
+  - Excellent test coverage (76.8%)
   - TLS support
   - Can run as standalone server or embedded HTTP handler
   - Fail-fast validation with clear error messages
 
 ## Why Choose This Library?
 
-- **🚀 Production Ready**: Comprehensive error handling, no panics, excellent test coverage (75%+)
+- **🚀 Production Ready**: Comprehensive error handling, no panics, excellent test coverage (76.8%)
 - **🔌 Plugin Architecture**: Connect to any backend (LDAP, SQL, NoSQL, APIs) with a simple interface
 - **✅ Full SCIM 2.0 Compliance**: Implements RFC 7643 & 7644 specifications completely
 - **📊 Observable**: Built-in structured logging with `log/slog`, HTTP request tracking
@@ -74,21 +74,69 @@ go get github.com/marcelom97/scimgateway
 
 ## Quick Start
 
-Here's a minimal example to get started:
+The gateway requires you to implement a custom plugin for your backend. See complete working examples in the `examples/` directory.
+
+### Minimal Example Structure
 
 ```go
 package main
 
 import (
+    "context"
     "log"
-
-    gateway "github.com/marcelom97/scimgateway"
+    
+    "github.com/marcelom97/scimgateway"
     "github.com/marcelom97/scimgateway/config"
-    "github.com/marcelom97/scimgateway/memory"
+    "github.com/marcelom97/scimgateway/plugin"
+    "github.com/marcelom97/scimgateway/scim"
 )
 
+// Implement your plugin
+type MyPlugin struct {
+    name string
+    // your backend connection (DB, LDAP, API client, etc.)
+}
+
+func NewMyPlugin(name string) *MyPlugin {
+    return &MyPlugin{name: name}
+}
+
+func (p *MyPlugin) Name() string { return p.name }
+
+func (p *MyPlugin) GetUsers(ctx context.Context, params scim.QueryParams) ([]*scim.User, error) {
+    // Fetch users from your backend
+    // Return as []*scim.User - adapter handles filtering if needed
+    return []*scim.User{}, nil
+}
+
+func (p *MyPlugin) GetUser(ctx context.Context, id string, attributes []string) (*scim.User, error) {
+    // Fetch single user by ID
+    return &scim.User{}, nil
+}
+
+func (p *MyPlugin) CreateUser(ctx context.Context, user *scim.User) (*scim.User, error) {
+    // Create user in your backend
+    return user, nil
+}
+
+func (p *MyPlugin) ModifyUser(ctx context.Context, id string, patch *scim.PatchOp) (*scim.User, error) {
+    // Apply PATCH operations
+    return &scim.User{}, nil
+}
+
+func (p *MyPlugin) DeleteUser(ctx context.Context, id string) error {
+    // Delete user from your backend
+    return nil
+}
+
+// Implement Group methods similarly...
+func (p *MyPlugin) GetGroups(ctx context.Context, params scim.QueryParams) ([]*scim.Group, error) { return nil, nil }
+func (p *MyPlugin) GetGroup(ctx context.Context, id string, attributes []string) (*scim.Group, error) { return nil, nil }
+func (p *MyPlugin) CreateGroup(ctx context.Context, group *scim.Group) (*scim.Group, error) { return nil, nil }
+func (p *MyPlugin) ModifyGroup(ctx context.Context, id string, patch *scim.PatchOp) (*scim.Group, error) { return nil, nil }
+func (p *MyPlugin) DeleteGroup(ctx context.Context, id string) error { return nil }
+
 func main() {
-    // Create configuration with per-plugin authentication
     cfg := &config.Config{
         Gateway: config.GatewayConfig{
             BaseURL: "http://localhost:8080",
@@ -96,7 +144,7 @@ func main() {
         },
         Plugins: []config.PluginConfig{
             {
-                Name: "memory",
+                Name: "myplugin",
                 Auth: &config.AuthConfig{
                     Type: "basic",
                     Basic: &config.BasicAuth{
@@ -107,21 +155,14 @@ func main() {
             },
         },
     }
-
-    // Create and configure gateway
-    gw := gateway.New(cfg)
-
-    // Register plugin (auth is automatically configured from cfg.Plugins)
-    gw.RegisterPlugin(memory.New("memory"))
-
-    // Optional: Enable structured logging
-    // gw.SetLogger(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
-
-    // Initialize and start (config is validated automatically)
+    
+    gw := scimgateway.New(cfg)
+    gw.RegisterPlugin(NewMyPlugin("myplugin"))
+    
     if err := gw.Initialize(); err != nil {
         log.Fatal(err)
     }
-
+    
     log.Println("Starting SCIM Gateway on :8080")
     if err := gw.Start(); err != nil {
         log.Fatal(err)
@@ -129,13 +170,18 @@ func main() {
 }
 ```
 
-Test it:
+**For complete working examples, see:**
+- `examples/memory/` - In-memory reference implementation
+- `examples/postgres/` - PostgreSQL backend
+- `examples/sqlite/` - SQLite backend
+
+Test your gateway:
 ```bash
 # List users
-curl -u admin:secret http://localhost:8080/memory/Users
+curl -u admin:secret http://localhost:8080/myplugin/Users
 
 # Create a user
-curl -u admin:secret -X POST http://localhost:8080/memory/Users \
+curl -u admin:secret -X POST http://localhost:8080/myplugin/Users \
   -H "Content-Type: application/scim+json" \
   -d '{
     "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
@@ -148,7 +194,7 @@ curl -u admin:secret -X POST http://localhost:8080/memory/Users \
   }'
 
 # Search with filter
-curl -u admin:secret "http://localhost:8080/memory/Users?filter=userName%20eq%20%22john.doe%22"
+curl -u admin:secret "http://localhost:8080/myplugin/Users?filter=userName%20eq%20%22john.doe%22"
 ```
 
 ## Usage Examples
@@ -156,8 +202,8 @@ curl -u admin:secret "http://localhost:8080/memory/Users?filter=userName%20eq%20
 ### Embedded Mode (Use as HTTP Handler)
 
 ```go
-gw := gateway.New(cfg)
-gw.RegisterPlugin(memory.New("memory"))
+gw := scimgateway.New(cfg)
+gw.RegisterPlugin(NewMyPlugin("myplugin"))
 
 if err := gw.Initialize(); err != nil {
     log.Fatal(err)
@@ -187,17 +233,17 @@ cfg := &config.Config{
     },
     Plugins: []config.PluginConfig{
         {
-            Name: "memory",
+            Name: "ldap",
             Auth: &config.AuthConfig{
                 Type: "basic",
                 Basic: &config.BasicAuth{Username: "admin", Password: "secret"},
             },
         },
         {
-            Name: "ldap",
+            Name: "database",
             Auth: &config.AuthConfig{
                 Type: "bearer",
-                Bearer: &config.BearerAuth{Token: "ldap-token-123"},
+                Bearer: &config.BearerAuth{Token: "db-token-123"},
             },
         },
         {
@@ -207,12 +253,12 @@ cfg := &config.Config{
     },
 }
 
-gw := gateway.New(cfg)
+gw := scimgateway.New(cfg)
 
 // Register multiple backends (auth is configured per plugin)
-gw.RegisterPlugin(memory.New("memory"))
-gw.RegisterPlugin(ldapPlugin.New("ldap"))
-gw.RegisterPlugin(sqlPlugin.New("public"))
+gw.RegisterPlugin(NewLDAPPlugin("ldap"))
+gw.RegisterPlugin(NewDatabasePlugin("database"))
+gw.RegisterPlugin(NewPublicPlugin("public"))
 
 if err := gw.Initialize(); err != nil {
     log.Fatal(err)
@@ -223,9 +269,9 @@ if err := gw.Start(); err != nil {
 }
 
 // Access different backends with different auth:
-// http://localhost:8080/memory/Users    (requires basic auth: admin/secret)
-// http://localhost:8080/ldap/Users      (requires bearer token: ldap-token-123)
-// http://localhost:8080/public/Users    (no auth required)
+// http://localhost:8080/ldap/Users       (requires basic auth: admin/secret)
+// http://localhost:8080/database/Users   (requires bearer token: db-token-123)
+// http://localhost:8080/public/Users     (no auth required)
 ```
 
 ### TLS Configuration
@@ -243,7 +289,7 @@ cfg := &config.Config{
     },
     Plugins: []config.PluginConfig{
         {
-            Name: "memory",
+            Name: "myplugin",
             Auth: &config.AuthConfig{
                 Type: "basic",
                 Basic: &config.BasicAuth{Username: "admin", Password: "secret"},
@@ -265,7 +311,7 @@ cfg := &config.Config{
     },
     Plugins: []config.PluginConfig{
         {
-            Name: "memory",
+            Name: "myplugin",
             Auth: &config.AuthConfig{
                 Type: "bearer",
                 Bearer: &config.BearerAuth{Token: "my-secret-token"},
@@ -274,13 +320,13 @@ cfg := &config.Config{
     },
 }
 
-gw := gateway.New(cfg)
-gw.RegisterPlugin(memory.New("memory"))
+gw := scimgateway.New(cfg)
+gw.RegisterPlugin(NewMyPlugin("myplugin"))
 ```
 
 Test with:
 ```bash
-curl -H "Authorization: Bearer my-secret-token" http://localhost:8080/memory/Users
+curl -H "Authorization: Bearer my-secret-token" http://localhost:8080/myplugin/Users
 ```
 
 ### Custom Authentication
@@ -300,7 +346,7 @@ jwtAuth := &MyJWTAuthenticator{publicKey, audience, issuer}
 
 cfg := &config.Config{
     Plugins: []config.PluginConfig{{
-        Name: "memory",
+        Name: "myplugin",
         Auth: &config.AuthConfig{
             Type: "custom",
             Custom: &config.CustomAuth{Authenticator: jwtAuth},
@@ -315,7 +361,7 @@ Only Basic and Bearer auth are built-in to keep the core minimal.
 
 ## Creating Custom Plugins
 
-Implement the `plugin.Plugin` interface:
+Implement the `plugin.Plugin` interface to connect your backend:
 
 ```go
 package myplugin
@@ -328,7 +374,7 @@ import (
 
 type MyPlugin struct {
     name string
-    // your backend connection
+    // your backend connection (database, LDAP client, API client, etc.)
 }
 
 func New(name string) *MyPlugin {
@@ -339,26 +385,71 @@ func (p *MyPlugin) Name() string {
     return p.name
 }
 
+// GetUsers returns all users from your backend
+// The adapter will handle filtering, pagination, sorting if you return all data
 func (p *MyPlugin) GetUsers(ctx context.Context, params scim.QueryParams) ([]*scim.User, error) {
-    // Simple approach: return all users, adapter handles filtering/pagination
-    users := p.fetchAllUsers()
+    // Simple approach: return all users as []*scim.User
+    // The adapter handles filtering/pagination/sorting
+    users := p.fetchAllUsersFromBackend()  // returns []*scim.User
     return users, nil
 
-    // OR optimized: process filters in your backend
+    // OR optimized approach: process filters in your backend for better performance
     // if params.Filter != "" {
-    //     return p.queryUsersWithFilter(params.Filter)
+    //     return p.queryUsersWithFilter(params.Filter)  // translate filter to SQL/LDAP/etc
     // }
 }
 
-func (p *MyPlugin) CreateUser(ctx context.Context, user *scim.User) (*scim.User, error) {
-    // Create user in your backend
+// GetUser returns a single user by ID
+func (p *MyPlugin) GetUser(ctx context.Context, id string, attributes []string) (*scim.User, error) {
+    // Fetch user from your backend
+    // The 'attributes' parameter can be used to optimize database queries (column projection)
+    user := p.fetchUserByID(id)
     return user, nil
 }
 
-// Implement other methods: GetUser, ModifyUser, DeleteUser, GetGroups, CreateGroup, etc.
+// CreateUser creates a new user in your backend
+func (p *MyPlugin) CreateUser(ctx context.Context, user *scim.User) (*scim.User, error) {
+    // user is *scim.User with fields: UserName, Name, Emails, Active, etc.
+    // Create user in your backend and return the created user with ID and metadata
+    user.ID = generateID()
+    user.Meta = &scim.Meta{
+        ResourceType: "User",
+        Created:      time.Now().Format(time.RFC3339),
+        LastModified: time.Now().Format(time.RFC3339),
+        Version:      "1",
+    }
+    
+    p.saveUserToBackend(user)
+    return user, nil
+}
+
+// ModifyUser applies PATCH operations to a user
+func (p *MyPlugin) ModifyUser(ctx context.Context, id string, patch *scim.PatchOp) (*scim.User, error) {
+    // Get existing user
+    user := p.fetchUserByID(id)
+    
+    // Apply patch operations (the adapter has already validated the patch)
+    // You can apply it yourself or let the adapter do it
+    updatedUser := applyPatchToUser(user, patch)
+    
+    p.saveUserToBackend(updatedUser)
+    return updatedUser, nil
+}
+
+// DeleteUser removes a user from your backend
+func (p *MyPlugin) DeleteUser(ctx context.Context, id string) error {
+    return p.deleteUserFromBackend(id)
+}
+
+// Implement Group methods similarly:
+// GetGroups, GetGroup, CreateGroup, ModifyGroup, DeleteGroup
 ```
 
-See `examples/custom-plugin/` for a complete example.
+**Key Points:**
+- All methods return typed SCIM structs: `*scim.User`, `*scim.Group`
+- The adapter handles SCIM protocol details (filtering, pagination, attribute selection)
+- You can optimize by implementing filtering in your backend (SQL WHERE, LDAP filters, etc.)
+- See `examples/custom-plugin/` for a complete template
 
 ## API Endpoints
 
@@ -517,10 +608,11 @@ make all  # tidy, fmt, test, build
 ├── auth/           # Authentication middleware and providers
 ├── config/         # Configuration types and defaults
 ├── examples/       # Example implementations
-│   ├── in-memory/     # Simple in-memory server
-│   ├── sqlite/        # Simple sqlite-backed server
-│   └── custom-plugin/ # Custom plugin example
-├── memory/         # In-memory plugin implementation
+│   ├── memory/        # In-memory reference implementation
+│   ├── postgres/      # PostgreSQL backend
+│   ├── sqlite/        # SQLite backend
+│   ├── jwt-auth/      # Custom JWT authentication
+│   └── custom-plugin/ # Plugin template
 ├── plugin/         # Plugin interface and manager
 ├── scim/           # SCIM protocol implementation
 │   ├── attributes.go  # Attribute selection
@@ -626,7 +718,7 @@ cfg := &config.Config{
     Plugins: []config.PluginConfig{}, // ❌ No plugins
 }
 
-gw := gateway.New(cfg)
+gw := scimgateway.New(cfg)
 err := gw.Initialize()
 // Returns detailed error:
 // "invalid configuration: config validation failed with 3 errors:
@@ -678,8 +770,8 @@ func (p *MyPlugin) GetUsers(ctx context.Context, params scim.QueryParams) ([]*sc
 
 ### Thread Safety
 - All gateway operations are thread-safe
-- The included memory plugin uses `sync.RWMutex` for concurrent access
-- Custom plugins should implement their own concurrency controls
+- Custom plugins should implement their own concurrency controls as needed
+- Use `sync.RWMutex` for read-heavy workloads
 
 ## Examples
 
