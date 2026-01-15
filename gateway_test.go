@@ -205,6 +205,69 @@ func TestHandlerNotInitialized(t *testing.T) {
 	}
 }
 
+func TestHandlerWithPortZero(t *testing.T) {
+	cfg := &config.Config{
+		Gateway: config.GatewayConfig{
+			BaseURL: "http://localhost",
+			Port:    0,
+		},
+		Plugins: []config.PluginConfig{
+			{Name: "test"},
+		},
+	}
+
+	gw := New(cfg)
+	p := &mockPlugin{name: "test"}
+	gw.RegisterPlugin(p)
+
+	err := gw.Initialize()
+	if err != nil {
+		t.Fatalf("Initialize() with port 0 should succeed for embedded mode, got error: %v", err)
+	}
+
+	handler, err := gw.Handler()
+	if err != nil {
+		t.Fatalf("Handler() with port 0 should succeed, got error: %v", err)
+	}
+	if handler == nil {
+		t.Error("Handler() returned nil")
+	}
+
+	req := httptest.NewRequest("GET", "/test/Users", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", w.Code)
+	}
+}
+
+func TestStartWithPortZero(t *testing.T) {
+	cfg := &config.Config{
+		Gateway: config.GatewayConfig{
+			BaseURL: "http://localhost",
+			Port:    0,
+		},
+		Plugins: []config.PluginConfig{
+			{Name: "test"},
+		},
+	}
+
+	gw := New(cfg)
+	p := &mockPlugin{name: "test"}
+	gw.RegisterPlugin(p)
+
+	err := gw.Start()
+	if err == nil {
+		t.Fatal("Start() with port 0 should return error")
+	}
+
+	expectedMsg := "port is required for standalone mode"
+	if !strings.Contains(err.Error(), expectedMsg) {
+		t.Errorf("Expected error to contain %q, got %q", expectedMsg, err.Error())
+	}
+}
+
 func TestConfig(t *testing.T) {
 	cfg := &config.Config{
 		Gateway: config.GatewayConfig{

@@ -149,8 +149,8 @@ func (g *GatewayConfig) Validate() error {
 		}
 	}
 
-	// Validate Port
-	if g.Port < 1 || g.Port > 65535 {
+	// Validate Port (0 means unspecified - valid for embedded mode using Handler())
+	if g.Port != 0 && (g.Port < 1 || g.Port > 65535) {
 		errors = append(errors, ValidationError{
 			Field:   "gateway.port",
 			Message: fmt.Sprintf("port %d is out of range: must be between 1 and 65535", g.Port),

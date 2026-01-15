@@ -129,6 +129,10 @@ func (g *Gateway) Start() error {
 		}
 	}
 
+	if g.config.Gateway.Port == 0 {
+		return fmt.Errorf("port is required for standalone mode - use Handler() for embedded mode")
+	}
+
 	addr := fmt.Sprintf(":%d", g.config.Gateway.Port)
 
 	if g.config.Gateway.TLS != nil && g.config.Gateway.TLS.Enabled {

@@ -41,11 +41,24 @@ func TestConfigValidate(t *testing.T) {
 			errContains: []string{"gateway.baseURL", "cannot be empty"},
 		},
 		{
-			name: "invalid port - too low",
+			name: "valid port - zero for embedded mode",
 			config: &Config{
 				Gateway: GatewayConfig{
 					BaseURL: "http://localhost",
 					Port:    0,
+				},
+				Plugins: []PluginConfig{
+					{Name: "test"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid port - negative",
+			config: &Config{
+				Gateway: GatewayConfig{
+					BaseURL: "http://localhost",
+					Port:    -1,
 				},
 				Plugins: []PluginConfig{
 					{Name: "test"},
