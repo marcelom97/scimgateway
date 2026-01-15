@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v1.0.0-rc.2] - 2026-01-15
 
+
+## Changelog
+### Features
+* feat: make port optional for embedded mode (@marcelom97)
+
+**Full Changelog**: https://github.com/marcelom97/scimgateway/compare/v1.0.0-rc.1...v1.0.0-rc.2
+
+## What's Changed
+
+### Added
+- Port is now optional for embedded mode - use `Port: 0` when using `Handler()` to embed the gateway into an existing HTTP server (#1)
+
+### Usage
+
+```go
+cfg := &config.Config{
+    Gateway: config.GatewayConfig{
+        BaseURL: "http://localhost",
+        // Port: 0 (or omit - zero value means embedded mode)
+    },
+    Plugins: []config.PluginConfig{{Name: "memory"}},
+}
+
+gw := gateway.New(cfg)
+gw.RegisterPlugin(myPlugin)
+gw.Initialize()
+
+handler, _ := gw.Handler()
+http.Handle("/scim/", http.StripPrefix("/scim", handler))
+```
+
+**Full Changelog**: https://github.com/marcelom97/scimgateway/compare/v1.0.0-rc.1...v1.0.0-rc.2
+[v1.0.0-rc.2]: https://github.com/marcelom97/scimgateway/compare/v1.0.0-rc.1...v1.0.0-rc.2
+
+
+## [v1.0.0-rc.2] - 2026-01-15
+
 ### Added
 - Port is now optional for embedded mode - use `Port: 0` when using `Handler()` to embed the gateway into an existing HTTP server ([#1](https://github.com/marcelom97/scimgateway/issues/1))
 
