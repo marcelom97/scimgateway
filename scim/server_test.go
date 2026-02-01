@@ -609,7 +609,7 @@ func TestServeHTTP(t *testing.T) {
 func TestHandleReplaceUser(t *testing.T) {
 	plugin := newMockPlugin()
 	pm := &mockPluginManager{plugin: plugin}
-	
+
 	// Create a test user
 	user := &User{
 		ID:       "user1",
@@ -617,32 +617,32 @@ func TestHandleReplaceUser(t *testing.T) {
 		Active:   Bool(true),
 	}
 	plugin.CreateUser(context.Background(), user)
-	
+
 	srv := NewServer("http://localhost:8080", pm)
-	
+
 	// Replace user
 	newUser := &User{
 		ID:       "user1",
 		UserName: "updated",
 		Active:   Bool(false),
 	}
-	
+
 	body, _ := json.Marshal(newUser)
 	req := httptest.NewRequest("PUT", "/test/Users/user1", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/scim+json")
 	w := httptest.NewRecorder()
-	
+
 	srv.ServeHTTP(w, req)
-	
+
 	if w.Code != http.StatusOK {
 		t.Errorf("status = %d, want %d, body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
-	
+
 	var resp User
 	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	
+
 	if resp.UserName != "updated" {
 		t.Errorf("userName = %s, want 'updated'", resp.UserName)
 	}
@@ -652,38 +652,38 @@ func TestHandleReplaceUser(t *testing.T) {
 func TestHandleReplaceGroup(t *testing.T) {
 	plugin := newMockPlugin()
 	pm := &mockPluginManager{plugin: plugin}
-	
+
 	// Create a test group
 	group := &Group{
 		ID:          "group1",
 		DisplayName: "testgroup",
 	}
 	plugin.CreateGroup(context.Background(), group)
-	
+
 	srv := NewServer("http://localhost:8080", pm)
-	
+
 	// Replace group
 	newGroup := &Group{
 		ID:          "group1",
 		DisplayName: "updated",
 	}
-	
+
 	body, _ := json.Marshal(newGroup)
 	req := httptest.NewRequest("PUT", "/test/Groups/group1", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/scim+json")
 	w := httptest.NewRecorder()
-	
+
 	srv.ServeHTTP(w, req)
-	
+
 	if w.Code != http.StatusOK {
 		t.Errorf("status = %d, want %d, body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
-	
+
 	var resp Group
 	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	
+
 	if resp.DisplayName != "updated" {
 		t.Errorf("displayName = %s, want 'updated'", resp.DisplayName)
 	}
@@ -693,16 +693,16 @@ func TestHandleReplaceGroup(t *testing.T) {
 func TestHandlePatchGroup(t *testing.T) {
 	plugin := newMockPlugin()
 	pm := &mockPluginManager{plugin: plugin}
-	
+
 	// Create a test group
 	group := &Group{
 		ID:          "group1",
 		DisplayName: "testgroup",
 	}
 	plugin.CreateGroup(context.Background(), group)
-	
+
 	srv := NewServer("http://localhost:8080", pm)
-	
+
 	patch := &PatchOp{
 		Schemas: []string{"urn:ietf:params:scim:api:messages:2.0:PatchOp"},
 		Operations: []PatchOperation{
@@ -713,14 +713,14 @@ func TestHandlePatchGroup(t *testing.T) {
 			},
 		},
 	}
-	
+
 	body, _ := json.Marshal(patch)
 	req := httptest.NewRequest("PATCH", "/test/Groups/group1", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/scim+json")
 	w := httptest.NewRecorder()
-	
+
 	srv.ServeHTTP(w, req)
-	
+
 	if w.Code != http.StatusOK {
 		t.Errorf("status = %d, want %d, body: %s", w.Code, http.StatusOK, w.Body.String())
 	}
